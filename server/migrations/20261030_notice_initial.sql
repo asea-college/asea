@@ -63,7 +63,7 @@ create policy notice_announcements_insert on public.notice_announcements for ins
 with check(created_by=(select auth.uid()) and exists(select 1 from public.notice_profiles p where p.id=(select auth.uid()) and p.status='active' and p.role in ('super','writer')) and (audience='all' or audience='person'));
 drop policy if exists notice_responses_self_insert on public.notice_responses;
 create policy notice_responses_self_insert on public.notice_responses for insert to authenticated
-with check(person_id=(select auth.uid()) and exists(select 1 from public.notice_announcements n where n.id=notice_id and n.status='published' and n.scheduled_at<=now()));
+with check(person_id=(select auth.uid()) and exists(select 1 from public.notice_announcements n where n.id=notice_id and n.status='published' and n.scheduled_at<=now() and exists(select 1 from public.notice_profiles p where p.id=(select auth.uid()) and p.status='active' and (n.audience='all' or (n.audience='department' and n.target_id=p.department_id) or (n.audience='person' and n.target_id=p.id)))));
 drop policy if exists notice_responses_self_read on public.notice_responses;
 create policy notice_responses_self_read on public.notice_responses for select to authenticated using(person_id=(select auth.uid()));
 grant select on public.notice_departments,public.notice_profiles to authenticated;
