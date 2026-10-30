@@ -34,7 +34,7 @@ namespace ASEA.Notice {
       icon=new NotifyIcon{Icon=SystemIcons.Information,Text="ASEA 통합 업무 알림",Visible=true};
       var menu=new ContextMenuStrip();
       menu.Items.Add("로그인 / 계정 전환",null,(s,e)=>Login());
-      menu.Items.Add("공지 확인",null,async(s,e)=>await CheckNotices());
+      menu.Items.Add("공지 확인",null,async(s,e)=>await CheckNotices(true));
       menu.Items.Add("학교 일정표",null,(s,e)=>OpenCalendar());
       menu.Items.Add("로그아웃",null,(s,e)=>Logout());
       menu.Items.Add("종료",null,(s,e)=>ExitThread());
@@ -79,18 +79,18 @@ namespace ASEA.Notice {
             var result=json.Deserialize<Dictionary<string,object>>(await Call("/auth/v1/token?grant_type=password",HttpMethod.Post,payload));
             accessToken=Convert.ToString(result["access_token"]);
             var user=(Dictionary<string,object>)result["user"];userId=Convert.ToString(user["id"]);
-            SaveConfig();shown.Clear();form.Close();await CheckNotices();
+            SaveConfig();shown.Clear();form.Close();icon.BalloonTipTitle="ASEA 로그인 완료";icon.BalloonTipText="트레이 아이콘을 오른쪽 클릭하여 공지와 일정표를 확인할 수 있습니다.";icon.ShowBalloonTip(3500);await CheckNotices();
           }catch(Exception ex){MessageBox.Show(ex.Message,"로그인 오류");}
         };
         form.ShowDialog();
       }
     }
-    async Task CheckNotices(){
+    async Task CheckNotices(bool notifyWhenEmpty=false){
       if(checking||string.IsNullOrEmpty(accessToken)||string.IsNullOrEmpty(userId))return;
       checking=true;
       try{
         var result=json.DeserializeObject(await Call("/rest/v1/notice_announcements?select=id,title,blocks,response_type&status=eq.published&order=created_at.desc&limit=50",HttpMethod.Get));
-        var notices=result as object[];if(notices==null)return;
+        var notices=result as object[];if(notices==null)return;if(notices.Length==0 && notifyWhenEmpty){MessageBox.Show("현재 확인 가능한 공지가 없습니다.","ASEA 공지");return;}
         foreach(var entry in notices){
           var n=entry as Dictionary<string,object>;if(n==null)continue;
           var id=Convert.ToString(n["id"]);if(shown.Contains(id))continue;
