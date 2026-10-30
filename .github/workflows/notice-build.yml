@@ -1,0 +1,37 @@
+name: ASEA Notice validation and Windows artifact
+on:
+  push:
+    branches: [main, 'feat/**']
+    paths: ['apps/admin-web/**', 'apps/desktop/**', 'notice/**', 'server/migrations/**', '.github/workflows/notice-build.yml']
+  pull_request:
+    paths: ['apps/admin-web/**', 'apps/desktop/**', 'notice/**', 'server/migrations/**', '.github/workflows/notice-build.yml']
+  workflow_dispatch:
+jobs:
+  web-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate admin HTML
+        run: |
+          python3 - <<'PY'
+          from html.parser import HTMLParser
+          class Check(HTMLParser): pass
+          Check().feed(open('apps/admin-web/index.html',encoding='utf-8').read())
+          print('HTML parsed')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: asea-notice-admin-web
+          path: apps/admin-web/
+  windows-build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: microsoft/setup-msbuild@v2
+      - name: Build Windows app
+        run: msbuild apps/desktop/AseaNotice.csproj /restore /p:Configuration=Release
+      - uses: actions/upload-artifact@v4
+        with:
+          name: asea-notice-windows-unverified
+          path: apps/desktop/bin/Release/
+          if-no-files-found: warn
