@@ -118,7 +118,7 @@ namespace ASEA.Notice {
             if(inputs[3].Text!=inputs[4].Text)throw new Exception("비밀번호가 일치하지 않습니다.");
             var payload=json.Serialize(new Dictionary<string,object>{
               {"email",inputs[2].Text.Trim()},{"password",inputs[3].Text},
-              {"data",new Dictionary<string,string>{{"full_name",inputs[0].Text.Trim()},{"requested_department",inputs[1].Text.Trim()}}}
+              {"data",new Dictionary<string,string>{{"full_name",inputs[0].Text.Trim()},{"requested_department",inputs[1].Text.Trim()},{"asea_notice_signup","yes"}}}
             });
             await Call("/auth/v1/signup",HttpMethod.Post,payload);
             MessageBox.Show("가입 요청이 접수되었습니다. 이메일 확인 절차가 설정되어 있으면 인증을 완료하고, 관리자의 사용 승인을 기다리십시오.","ASEA 회원가입");
