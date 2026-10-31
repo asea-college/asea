@@ -30,10 +30,38 @@ class _SignInState extends State<SignIn>{
  TextField(controller:email,keyboardType:TextInputType.emailAddress,decoration:const InputDecoration(labelText:'이메일',border:OutlineInputBorder())),
  const SizedBox(height:12),TextField(controller:pw,obscureText:true,decoration:const InputDecoration(labelText:'비밀번호',border:OutlineInputBorder())),
  const SizedBox(height:16),FilledButton(onPressed:busy?null:login,child:Text(busy?'인증 중':'로그인')),
+ TextButton(onPressed:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>const Register())),child:const Text('처음 사용하시나요? 교직원 가입')),
  if(error.isNotEmpty)Text(error,style:const TextStyle(color:Colors.red)),
  const SizedBox(height:14),const Text('아이디 전용 가입은 인증 API 구현 전까지 이용할 수 없습니다.',style:TextStyle(fontSize:11,color:Colors.grey))
  ])))))));
 }
+class Register extends StatefulWidget {const Register({super.key});@override State<Register> createState()=>_RegisterState();}
+class _RegisterState extends State<Register>{
+ final name=TextEditingController(),dept=TextEditingController(),email=TextEditingController(),pw=TextEditingController();
+ String status='';bool busy=false;
+ @override void dispose(){for(final c in [name,dept,email,pw]){c.dispose();}super.dispose();}
+ Future<void> signup()async{
+  setState((){busy=true;status='';});
+  try{
+   if(name.text.trim().isEmpty||dept.text.trim().isEmpty)throw Exception('성명과 부서를 입력하십시오.');
+   if(!email.text.contains('@')||pw.text.length<8)throw Exception('이메일과 8자 이상 비밀번호가 필요합니다.');
+   await Supabase.instance.client.auth.signUp(email:email.text.trim(),password:pw.text,data:{
+    'asea_notice_signup':'yes','full_name':name.text.trim(),'requested_department':dept.text.trim()
+   });
+   if(mounted)setState(()=>status='가입 요청이 접수되었습니다. 이메일 확인이 필요한 경우 인증 후 관리자의 승인을 기다리십시오.');
+  }catch(e){if(mounted)setState(()=>status=e.toString());}
+  finally{if(mounted)setState(()=>busy=false);}
+ }
+ @override Widget build(BuildContext context)=>Scaffold(appBar:AppBar(title:const Text('교직원 회원가입')),body:SingleChildScrollView(child:Padding(padding:const EdgeInsets.all(22),child:Column(children:[
+ TextField(controller:name,decoration:const InputDecoration(labelText:'성명')),
+ TextField(controller:dept,decoration:const InputDecoration(labelText:'부서')),
+ TextField(controller:email,keyboardType:TextInputType.emailAddress,decoration:const InputDecoration(labelText:'이메일')),
+ TextField(controller:pw,obscureText:true,decoration:const InputDecoration(labelText:'비밀번호 (8자 이상)')),
+ const SizedBox(height:18),FilledButton(onPressed:busy?null:signup,child:Text(busy?'신청 중...':'가입 신청')),
+ if(status.isNotEmpty)Padding(padding:const EdgeInsets.all(12),child:Text(status))
+ ]))));
+}
+
 class Rooms extends StatefulWidget {const Rooms({super.key});@override State<Rooms> createState()=>_RoomsState();}
 class _RoomsState extends State<Rooms>{
  List<Map<String,dynamic>> rooms=[];String status='';bool loading=true;
