@@ -59,6 +59,7 @@ class _RoomsState extends State<Rooms>{
  NavigationDestination(icon:Icon(Icons.campaign_outlined),label:'공지'),
  NavigationDestination(icon:Icon(Icons.settings_outlined),label:'설정')]));
 }
+}
 class Thread extends StatefulWidget {
  final Map<String,dynamic> room;const Thread({super.key,required this.room});
  @override State<Thread> createState()=>_ThreadState();
