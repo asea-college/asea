@@ -166,6 +166,22 @@ class _AdminConsoleState extends State<AdminConsole>{
  try{await sb.rpc('notice_grant_super',params:{'p_user':person['id']});if(mounted)setState(()=>result='최고 관리자 권한을 부여했습니다.');}
  catch(e){if(mounted)setState(()=>result=e.toString());}
  }
+ Future<void> transferStaff(Map<String,dynamic> person)async{
+  String? toId;
+  final approved=await showDialog<bool>(context:context,builder:(ctx)=>StatefulBuilder(builder:(ctx,update)=>AlertDialog(title:Text(person['full_name'].toString()+' 부서 이동'),
+   content:DropdownButtonFormField<String>(hint:const Text('신규 부서 선택'),items:departments.map((d)=>DropdownMenuItem<String>(value:d['id'].toString(),child:Text(d['name'].toString()))).toList(),onChanged:(v)=>update(()=>toId=v)),
+   actions:[TextButton(onPressed:()=>Navigator.pop(ctx,false),child:const Text('취소')),FilledButton(onPressed:toId==null?null:()=>Navigator.pop(ctx,true),child:const Text('이관'))])));
+  if(approved!=true||toId==null)return;
+  try{await sb.rpc('notice_transfer_staff',params:{'p_staff':person['id'],'p_to':toId});await reload();}
+  catch(e){if(mounted)setState(()=>result=e.toString());}
+ }
+ Future<void> renameDept(Map<String,dynamic> dept)async{
+  final input=TextEditingController(text:dept['name'].toString());
+  final ok=await showDialog<bool>(context:context,builder:(ctx)=>AlertDialog(title:const Text('부서명 변경'),content:TextField(controller:input),actions:[TextButton(onPressed:()=>Navigator.pop(ctx,false),child:const Text('취소')),FilledButton(onPressed:()=>Navigator.pop(ctx,true),child:const Text('변경'))]));
+  if(ok!=true||input.text.trim().isEmpty)return;
+  try{await sb.rpc('notice_rename_department',params:{'p_department':dept['id'],'p_name':input.text.trim()});await reload();}
+  catch(e){if(mounted)setState(()=>result=e.toString());}
+ }
  Future<void> addChannel()async{
   if(channel.text.trim().isEmpty)return;
   try{await sb.rpc('notice_create_channel',params:{'p_kind':'all','p_title':channel.text.trim()});channel.clear();if(mounted)setState(()=>result='전체 메시지 채널을 만들었습니다.');}
@@ -180,8 +196,10 @@ class _AdminConsoleState extends State<AdminConsole>{
  ...pending.map((p)=>Card(child:ListTile(title:Text(p['full_name']?.toString()??'이름 없음'),subtitle:Text('신청 부서: '+(p['requested_department']?.toString()??'미지정')),trailing:FilledButton(onPressed:()=>approve(p),child:const Text('승인'))))),
  const Divider(),const ListTile(title:Text('최고 관리자 권한 부여'),subtitle:Text('승인된 직원만 지정 가능합니다. 권한 부여 전 계정을 확인하십시오.')),
  ...staff.where((p)=>p['id']!=sb.auth.currentUser?.id).map((p)=>ListTile(title:Text(p['full_name'].toString()),trailing:TextButton(onPressed:()=>makeSuper(p),child:const Text('관리자 지정')))),
+ const Divider(),const ListTile(title:Text('직원 부서 이관'),subtitle:Text('이관해도 이전 업무 채팅은 보존됩니다.')),
+ ...staff.map((p)=>ListTile(title:Text(p['full_name'].toString()),trailing:TextButton(onPressed:()=>transferStaff(p),child:const Text('부서 이동')))),
  const Divider(),const ListTile(title:Text('공식 부서 목록'),subtitle:Text('가입자는 이 목록에서만 부서를 선택합니다.')),
- ...departments.map((d)=>ListTile(leading:const Icon(Icons.account_tree_outlined),title:Text(d['name'].toString()))),
+ ...departments.map((d)=>ListTile(leading:const Icon(Icons.account_tree_outlined),title:Text(d['name'].toString()),trailing:TextButton(onPressed:()=>renameDept(d),child:const Text('명칭 변경')))),
  TextField(controller:department,decoration:const InputDecoration(labelText:'부서 추가',border:OutlineInputBorder())),
  FilledButton(onPressed:addDepartment,child:const Text('부서 등록')),
  const Divider(),TextField(controller:channel,decoration:const InputDecoration(labelText:'전체 메시지 채널명',border:OutlineInputBorder())),
