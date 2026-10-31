@@ -53,7 +53,7 @@ class _RoomsState extends State<Rooms>{
  trailing:const Icon(Icons.chevron_right),
  onTap:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>Thread(room:r)))))
  ]),
- bottomNavigationBar:const NavigationBar(selectedIndex:1,destinations:[
+ bottomNavigationBar:NavigationBar(selectedIndex:1,destinations:[
  NavigationDestination(icon:Icon(Icons.home_outlined),label:'홈'),
  NavigationDestination(icon:Icon(Icons.chat_bubble_outline),label:'메시지'),
  NavigationDestination(icon:Icon(Icons.campaign_outlined),label:'공지'),
