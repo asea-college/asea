@@ -25,6 +25,19 @@ jobs:
           python3 fetch_pretendard.py
           flutter pub get
           flutter analyze --no-fatal-infos
+      # Reuse the SAME debug certificate for subsequent beta2 builds while cache is retained.
+      # This is test-only and NOT a production signing solution.
+      - name: Restore beta2 debug signing identity
+        uses: actions/cache@v4
+        with:
+          path: ~/.android/debug.keystore
+          key: asea-ieum-beta2-debug-signing-v1
+      - name: Ensure beta2 debug signing identity
+        run: |
+          mkdir -p ~/.android
+          if [ ! -f ~/.android/debug.keystore ]; then
+            keytool -genkeypair -keystore ~/.android/debug.keystore -storepass android -keypass android -alias androiddebugkey -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US" -noprompt
+          fi
       - name: Build Android arm64 debug test APK
         run: |
           cd apps/mobile
