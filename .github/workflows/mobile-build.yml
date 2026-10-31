@@ -22,6 +22,7 @@ jobs:
           rm -f test/widget_test.dart
           rm -f analysis_options.yaml
           python3 configure_brand.py
+          python3 fetch_pretendard.py
           flutter pub get
           flutter analyze --no-fatal-infos
       - name: Build unsigned Android debug APK
