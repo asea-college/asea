@@ -1,0 +1,15 @@
+/* ASEA IEUM unified A+B+C design system: structured, welcoming, typographic */
+:root{--ieum-navy:#17365d;--ieum-brand:#245a9c;--ieum-brand-soft:#edf4fc;--ieum-mint:#e9f5ef;--ieum-paper:#f7f9fc;--ieum-ink:#21364e;--ieum-muted:#718199;--ieum-line:#e3eaf2;--ieum-radius:16px;--ieum-shadow:0 8px 24px rgba(27,55,91,.06)}
+html,body{font-family:"Pretendard Variable",Pretendard,"Apple SD Gothic Neo",sans-serif!important;color:var(--ieum-ink);letter-spacing:-.02em}
+body{background:var(--ieum-paper)}
+button,input,select,textarea{font-family:inherit!important}
+button{transition:background-color .15s,transform .15s,box-shadow .15s}
+button:active{transform:scale(.985)}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,a:focus-visible{outline:3px solid #89bbef;outline-offset:2px}
+h1,h2,h3{font-weight:700;letter-spacing:-.035em;line-height:1.32}
+.card{border:1px solid var(--ieum-line);border-radius:var(--ieum-radius);box-shadow:var(--ieum-shadow)}
+.primary{background:var(--ieum-brand)}
+.primary:hover{background:#174884}
+.sub,.secondary{border-radius:10px}
+input,textarea,select{accent-color:var(--ieum-brand)}
+@media(prefers-reduced-motion:reduce){button,*{transition:none!important;animation:none!important}}
