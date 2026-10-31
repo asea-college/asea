@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Set human-readable OS app names on generated Flutter scaffolds.
-Preserves Android applicationId, iOS bundle id and app signing identity.
+Keeps iOS identity. Android beta2 is a fresh install identity to avoid CI debug signature collisions.
 """
 from pathlib import Path
 import re
@@ -29,8 +29,8 @@ if info.exists():
     print("iOS display name configured")
 
 # Dedicated beta package avoids collision with legacy CI debug signatures.
-# Never change this application ID for subsequent beta releases.
-beta_id = "kr.ac.asea.ieum.beta"
+# This one-time beta2 identity avoids older beta conflicts; stable signing must follow.
+beta_id = "kr.ac.asea.ieum.beta2"
 for gradle in (ROOT / "android/app/build.gradle.kts", ROOT / "android/app/build.gradle"):
     if gradle.exists():
         text = gradle.read_text(encoding="utf-8")
