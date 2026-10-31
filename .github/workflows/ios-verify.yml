@@ -1,0 +1,24 @@
+name: ASEA iOS validation (manual approval required)
+on:
+  workflow_dispatch:
+jobs:
+  ios:
+    if: ${{ vars.ASEA_IOS_BUILD_APPROVED == 'true' }}
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+      - name: Create iOS project and analyze
+        run: |
+          cd apps/mobile
+          flutter create --platforms=ios --project-name asea_staff .
+          rm -f test/widget_test.dart analysis_options.yaml
+          flutter pub get
+          flutter analyze --no-fatal-infos
+      - name: Compile iOS simulator (not signed)
+        run: |
+          cd apps/mobile
+          flutter build ios --simulator --debug --no-codesign
+# No automatic macOS execution without explicit budget approval and variable.
