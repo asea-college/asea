@@ -6,7 +6,7 @@ const key='sb_publishable_DxtNEPtU2KktlcRQnQx9jA_szCPFzMj';
 Future<void> main() async {
  WidgetsFlutterBinding.ensureInitialized();
  await Supabase.initialize(url:url, anonKey:key);
- runApp(MaterialApp(title:'ASEA',debugShowCheckedModeBanner:false,theme:ThemeData(colorScheme:ColorScheme.fromSeed(seedColor:const Color(0xff184da4))),home:const SignIn()));
+ runApp(MaterialApp(title:'아세아 이음',debugShowCheckedModeBanner:false,theme:ThemeData(colorScheme:ColorScheme.fromSeed(seedColor:const Color(0xff184da4))),home:const SignIn()));
 }
 class SignIn extends StatefulWidget {const SignIn({super.key});@override State<SignIn> createState()=>_SignInState();}
 class _SignInState extends State<SignIn>{
@@ -25,8 +25,8 @@ class _SignInState extends State<SignIn>{
   finally{if(mounted)setState(()=>busy=false);}
  }
  @override Widget build(BuildContext context)=>Scaffold(backgroundColor:const Color(0xfff1f5fb),body:Center(child:SingleChildScrollView(child:ConstrainedBox(constraints:const BoxConstraints(maxWidth:400),child:Card(child:Padding(padding:const EdgeInsets.all(24),child:Column(mainAxisSize:MainAxisSize.min,children:[
- const Icon(Icons.flight_takeoff,size:46,color:Color(0xff184da4)),const Text('ASEA',style:TextStyle(fontSize:32,fontWeight:FontWeight.bold,color:Color(0xff184da4))),
- const Text('교직원 통합 포털'),const SizedBox(height:30),
+ const Icon(Icons.flight_takeoff,size:46,color:Color(0xff184da4)),const Text('아세아 이음',style:TextStyle(fontSize:32,fontWeight:FontWeight.bold,color:Color(0xff184da4))),
+ const Text('함께 이어가는 소통 · ASEA IEUM'),const SizedBox(height:30),
  TextField(controller:email,keyboardType:TextInputType.emailAddress,decoration:const InputDecoration(labelText:'이메일',border:OutlineInputBorder())),
  const SizedBox(height:12),TextField(controller:pw,obscureText:true,decoration:const InputDecoration(labelText:'비밀번호',border:OutlineInputBorder())),
  const SizedBox(height:16),FilledButton(onPressed:busy?null:login,child:Text(busy?'인증 중':'로그인')),
@@ -54,7 +54,7 @@ class _RegisterState extends State<Register>{
   }catch(e){if(mounted)setState(()=>status=e.toString());}
   finally{if(mounted)setState(()=>busy=false);}
  }
- @override Widget build(BuildContext context)=>Scaffold(appBar:AppBar(title:const Text('교직원 회원가입')),body:SingleChildScrollView(child:Padding(padding:const EdgeInsets.all(22),child:Column(children:[
+ @override Widget build(BuildContext context)=>Scaffold(appBar:AppBar(title:const Text('아세아 이음 · 회원가입')),body:SingleChildScrollView(child:Padding(padding:const EdgeInsets.all(22),child:Column(children:[
  TextField(controller:name,decoration:const InputDecoration(labelText:'성명')),
  DropdownButtonFormField<String>(initialValue:chosen,decoration:const InputDecoration(labelText:'소속 부서',border:OutlineInputBorder()),hint:const Text('부서를 선택하세요'),isExpanded:true,
  items:departments.map((d)=>DropdownMenuItem<String>(value:d['id'].toString(),child:Text(d['name'].toString()))).toList(),
@@ -76,7 +76,7 @@ class _RoomsState extends State<Rooms>{
    if(mounted)setState((){rooms=List<Map<String,dynamic>>.from(data);status='';loading=false;});
   }catch(e){if(mounted)setState((){status=e.toString();loading=false;});}
  }
- @override Widget build(BuildContext context)=>Scaffold(appBar:AppBar(title:const Text('ASEA · 메시지함'),actions:[if(widget.isAdmin)IconButton(tooltip:'관리자 메뉴',onPressed:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>const AdminConsole())),icon:const Icon(Icons.admin_panel_settings)),IconButton(onPressed:refresh,icon:const Icon(Icons.refresh)),IconButton(onPressed:()async{await Supabase.instance.client.auth.signOut();if(context.mounted)Navigator.pushReplacement(context,MaterialPageRoute(builder:(_)=>const SignIn()));},icon:const Icon(Icons.logout))]),
+ @override Widget build(BuildContext context)=>Scaffold(appBar:AppBar(title:const Text('아세아 이음 · 메시지함'),actions:[if(widget.isAdmin)IconButton(tooltip:'관리자 메뉴',onPressed:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>const AdminConsole())),icon:const Icon(Icons.admin_panel_settings)),IconButton(onPressed:refresh,icon:const Icon(Icons.refresh)),IconButton(onPressed:()async{await Supabase.instance.client.auth.signOut();if(context.mounted)Navigator.pushReplacement(context,MaterialPageRoute(builder:(_)=>const SignIn()));},icon:const Icon(Icons.logout))]),
  body:loading?const Center(child:CircularProgressIndicator()):ListView(children:[
  if(status.isNotEmpty)Padding(padding:const EdgeInsets.all(12),child:Text(status)),
  if(rooms.isEmpty)const Padding(padding:EdgeInsets.all(30),child:Text('참여할 대화방이 없습니다.')),
@@ -139,7 +139,7 @@ class _AdminConsoleState extends State<AdminConsole>{
   catch(e){if(mounted)setState(()=>result=e.toString());}
  }
  @override Widget build(BuildContext context)=>Scaffold(
- appBar:AppBar(title:const Text('ASEA 관리자 센터'),actions:[IconButton(onPressed:reload,icon:const Icon(Icons.refresh))]),
+ appBar:AppBar(title:const Text('이음 관리자 센터'),actions:[IconButton(onPressed:reload,icon:const Icon(Icons.refresh))]),
  body:ListView(padding:const EdgeInsets.all(18),children:[
  const ListTile(leading:Icon(Icons.verified_user),title:Text('교직원 승인'),subtitle:Text('최고 관리자 계정에서만 접근할 수 있습니다.')),
  if(loading)const LinearProgressIndicator(),
