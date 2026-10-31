@@ -31,7 +31,7 @@ namespace ASEA.Notice {
     public TrayApp(){
       Directory.CreateDirectory(Path.GetDirectoryName(configPath));
       ReadConfig(); RegisterStartup();
-      icon=new NotifyIcon{Icon=SystemIcons.Information,Text="ASEA 통합 업무 알림",Visible=true};
+      icon=new NotifyIcon{Icon=SystemIcons.Information,Text="아세아 이음",Visible=true};
       var menu=new ContextMenuStrip();
       menu.Items.Add("로그인 / 계정 전환",null,(s,e)=>Login());
       menu.Items.Add("공지 확인",null,async(s,e)=>await CheckNotices(true));
@@ -60,9 +60,9 @@ namespace ASEA.Notice {
       }
     }
     void Login(){
-      using(var form=new Form{Text="ASEA | 교직원 통합 알림",ClientSize=new Size(440,450),StartPosition=FormStartPosition.CenterScreen,FormBorderStyle=FormBorderStyle.FixedDialog,MaximizeBox=false,BackColor=Color.FromArgb(243,247,253),Font=new Font("Malgun Gothic",9)}){
+      using(var form=new Form{Text="아세아 이음 | 알림",ClientSize=new Size(440,450),StartPosition=FormStartPosition.CenterScreen,FormBorderStyle=FormBorderStyle.FixedDialog,MaximizeBox=false,BackColor=Color.FromArgb(243,247,253),Font=new Font("Malgun Gothic",9)}){
         var header=new Panel{Dock=DockStyle.Top,Height=100,BackColor=Color.FromArgb(33,72,156)};
-        header.Controls.Add(new Label{Text="ASEA",ForeColor=Color.White,Font=new Font("Malgun Gothic",22,FontStyle.Bold),Location=new Point(23,15),AutoSize=true});
+        header.Controls.Add(new Label{Text="아세아 이음",ForeColor=Color.White,Font=new Font("Malgun Gothic",22,FontStyle.Bold),Location=new Point(23,15),AutoSize=true});
         header.Controls.Add(new Label{Text="교직원 통합 알림 · 안전한 계정 로그인",ForeColor=Color.White,Location=new Point(25,66),AutoSize=true});
         form.Controls.Add(header);
         var card=new Panel{Location=new Point(20,115),Size=new Size(400,315),BackColor=Color.White};
@@ -89,17 +89,17 @@ namespace ASEA.Notice {
             var row=rows[0] as Dictionary<string,object>;
             if(row==null||Convert.ToString(row["status"])!="active")throw new Exception("가입 신청이 접수되었으나 관리자 승인을 기다리고 있습니다.");
             SaveConfig();shown.Clear();form.Close();
-            icon.BalloonTipTitle="ASEA 로그인 완료";icon.BalloonTipText="작업표시줄의 ASEA 아이콘에서 공지를 확인할 수 있습니다.";icon.ShowBalloonTip(3500);
+            icon.BalloonTipTitle="아세아 이음 로그인 완료";icon.BalloonTipText="작업표시줄의 이음 아이콘에서 공지를 확인할 수 있습니다.";icon.ShowBalloonTip(3500);
             await CheckNotices();
-          }catch(Exception ex){accessToken="";userId="";MessageBox.Show(ex.Message,"ASEA 로그인 안내",MessageBoxButtons.OK,MessageBoxIcon.Information);}
+          }catch(Exception ex){accessToken="";userId="";MessageBox.Show(ex.Message,"이음 로그인 안내",MessageBoxButtons.OK,MessageBoxIcon.Information);}
           finally{action.Enabled=true;action.Text="로그인";}
         };
         form.ShowDialog();
       }
     }
     void Signup(){
-      using(var form=new Form{Text="ASEA | 교직원 회원가입",ClientSize=new Size(435,490),StartPosition=FormStartPosition.CenterScreen,FormBorderStyle=FormBorderStyle.FixedDialog,MaximizeBox=false,BackColor=Color.White,Font=new Font("Malgun Gothic",9)}){
-        form.Controls.Add(new Label{Text="ASEA 교직원 회원가입",Left=22,Top=16,AutoSize=true,Font=new Font("Malgun Gothic",15,FontStyle.Bold),ForeColor=Color.FromArgb(33,72,156)});
+      using(var form=new Form{Text="아세아 이음 | 회원가입",ClientSize=new Size(435,490),StartPosition=FormStartPosition.CenterScreen,FormBorderStyle=FormBorderStyle.FixedDialog,MaximizeBox=false,BackColor=Color.White,Font=new Font("Malgun Gothic",9)}){
+        form.Controls.Add(new Label{Text="아세아 이음 회원가입",Left=22,Top=16,AutoSize=true,Font=new Font("Malgun Gothic",15,FontStyle.Bold),ForeColor=Color.FromArgb(33,72,156)});
         var fields=new[] { "성명", "부서명", "이메일 (Gmail 이외의 이메일 가능)", "비밀번호", "비밀번호 확인" };
         var inputs=new TextBox[fields.Length];
         for(int i=0;i<fields.Length;i++){
@@ -121,7 +121,7 @@ namespace ASEA.Notice {
               {"data",new Dictionary<string,string>{{"full_name",inputs[0].Text.Trim()},{"requested_department",inputs[1].Text.Trim()},{"asea_notice_signup","yes"}}}
             });
             await Call("/auth/v1/signup",HttpMethod.Post,payload);
-            MessageBox.Show("가입 요청이 접수되었습니다. 이메일 확인 절차가 설정되어 있으면 인증을 완료하고, 관리자의 사용 승인을 기다리십시오.","ASEA 회원가입");
+            MessageBox.Show("가입 요청이 접수되었습니다. 이메일 확인 절차가 설정되어 있으면 인증을 완료하고, 관리자의 사용 승인을 기다리십시오.","아세아 이음 회원가입");
             form.Close();
           }catch(Exception ex){MessageBox.Show(ex.Message,"회원가입 실패",MessageBoxButtons.OK,MessageBoxIcon.Warning);}
           finally{submit.Enabled=true;submit.Text="회원가입 신청";}
@@ -134,19 +134,19 @@ namespace ASEA.Notice {
       checking=true;
       try{
         var result=json.DeserializeObject(await Call("/rest/v1/notice_announcements?select=id,title,blocks,response_type&status=eq.published&order=created_at.desc&limit=50",HttpMethod.Get));
-        var notices=result as object[];if(notices==null)return;if(notices.Length==0 && notifyWhenEmpty){MessageBox.Show("현재 확인 가능한 공지가 없습니다.","ASEA 공지");return;}
+        var notices=result as object[];if(notices==null)return;if(notices.Length==0 && notifyWhenEmpty){MessageBox.Show("현재 확인 가능한 공지가 없습니다.","이음 공지");return;}
         foreach(var entry in notices){
           var n=entry as Dictionary<string,object>;if(n==null)continue;
           var id=Convert.ToString(n["id"]);if(shown.Contains(id))continue;
           shown.Add(id);
           await ConfirmNotice(n);
         }
-      }catch(Exception ex){icon.BalloonTipTitle="ASEA 연결 상태";icon.BalloonTipText=ex.Message;icon.ShowBalloonTip(2000);}
+      }catch(Exception ex){icon.BalloonTipTitle="이음 연결 상태";icon.BalloonTipText=ex.Message;icon.ShowBalloonTip(2000);}
       finally{checking=false;}
     }
     async Task ConfirmNotice(Dictionary<string,object> n){
       string id=Convert.ToString(n["id"]),title=Convert.ToString(n["title"]),rtype=Convert.ToString(n["response_type"]);
-      using(var form=new Form{Text="ASEA 확인 필요 공지",Width=480,Height=335,StartPosition=FormStartPosition.CenterScreen,ControlBox=false,TopMost=true}){
+      using(var form=new Form{Text="이음 확인 필요 공지",Width=480,Height=335,StartPosition=FormStartPosition.CenterScreen,ControlBox=false,TopMost=true}){
         var panel=new TableLayoutPanel{Dock=DockStyle.Fill,Padding=new Padding(18),RowCount=4,ColumnCount=1};
         panel.RowStyles.Add(new RowStyle(SizeType.Absolute,45));
         panel.RowStyles.Add(new RowStyle(SizeType.Percent,100));
@@ -180,7 +180,7 @@ namespace ASEA.Notice {
         if(rows==null||rows.Length==0){MessageBox.Show("관리자 권한이 없습니다.");return;}
         var row=rows[0] as Dictionary<string,object>;
         if(row==null||Convert.ToString(row["status"])!="active"||Convert.ToString(row["role"])!="super"){MessageBox.Show("최고 관리자만 서버 설정을 변경할 수 있습니다.");return;}
-        using(var form=new Form{Text="ASEA | 최고 관리자 서버 설정",ClientSize=new Size(480,235),StartPosition=FormStartPosition.CenterScreen,Font=new Font("Malgun Gothic",9)}){
+        using(var form=new Form{Text="아세아 이음 | 관리자 설정",ClientSize=new Size(480,235),StartPosition=FormStartPosition.CenterScreen,Font=new Font("Malgun Gothic",9)}){
           form.Controls.Add(new Label{Text="Supabase URL",Left=20,Top=17,AutoSize=true});
           var url=new TextBox{Left=20,Top=41,Width=434,Text=server};form.Controls.Add(url);
           form.Controls.Add(new Label{Text="공개용 Publishable Key",Left=20,Top=84,AutoSize=true});
