@@ -56,7 +56,7 @@ class _RegisterState extends State<Register>{
  }
  @override Widget build(BuildContext context)=>Scaffold(appBar:AppBar(title:const Text('교직원 회원가입')),body:SingleChildScrollView(child:Padding(padding:const EdgeInsets.all(22),child:Column(children:[
  TextField(controller:name,decoration:const InputDecoration(labelText:'성명')),
- DropdownButtonFormField<String>(value:chosen,decoration:const InputDecoration(labelText:'소속 부서',border:OutlineInputBorder()),hint:const Text('부서를 선택하세요'),isExpanded:true,
+ DropdownButtonFormField<String>(initialValue:chosen,decoration:const InputDecoration(labelText:'소속 부서',border:OutlineInputBorder()),hint:const Text('부서를 선택하세요'),isExpanded:true,
  items:departments.map((d)=>DropdownMenuItem<String>(value:d['id'].toString(),child:Text(d['name'].toString()))).toList(),
  onChanged:(v)=>setState(()=>chosen=v)),
  if(departments.isEmpty)TextButton(onPressed:loadDepartments,child:const Text('부서 목록 새로고침')),
@@ -104,8 +104,10 @@ class _AdminConsoleState extends State<AdminConsole>{
  Future<void> reload()async{
   setState(()=>loading=true);
   try{
-   final resultSet=await Future.wait([sb.rpc('notice_pending_staff'),sb.from('notice_departments').select('id,name').eq('active',true).order('name'),sb.rpc('notice_staff_directory')]);
-   if(mounted)setState((){pending=List<Map<String,dynamic>>.from(resultSet[0] as List);departments=List<Map<String,dynamic>>.from(resultSet[1] as List);staff=List<Map<String,dynamic>>.from(resultSet[2] as List);result='';});
+   final pendingRows=await sb.rpc('notice_pending_staff');
+   final departmentRows=await sb.from('notice_departments').select('id,name').eq('active',true).order('name');
+   final staffRows=await sb.rpc('notice_staff_directory');
+   if(mounted)setState((){pending=List<Map<String,dynamic>>.from(pendingRows);departments=List<Map<String,dynamic>>.from(departmentRows);staff=List<Map<String,dynamic>>.from(staffRows);result='';});
   }catch(e){if(mounted)setState(()=>result=e.toString());}
   finally{if(mounted)setState(()=>loading=false);}
  }
