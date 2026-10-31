@@ -4,9 +4,14 @@
 @media(max-width:800px){.app{grid-template-columns:1fr}.nav{display:none}.inbox{border-right:0;padding-bottom:70px}.chat{position:fixed;inset:0;z-index:3;display:none}.chat.visible{display:flex}.chatheader{display:flex;gap:10px}.mobilebar{display:flex;position:fixed;bottom:0;left:0;right:0;background:white;justify-content:space-around;padding:17px;z-index:2;border-top:1px solid #edf0f5}.bubble{max-width:90%}}
 </style></head><body><section id="auth" class="login-wrap"><form id="login" class="login"><h1>ASEA</h1><h2>교직원 통합 포털</h2><p>승인된 교직원 계정으로 로그인하십시오.</p><input id="email" type="email" placeholder="이메일" required autocomplete="username"><input id="password" type="password" placeholder="비밀번호" required autocomplete="current-password"><button class="primary">로그인</button><p>별도 아이디 로그인은 공통 인증 API 구축 후 제공됩니다.</p><p id="autherror" class="status"></p></form></section>
 <div id="application" class="app hidden">
-<aside class="nav"><div class="logo">ASEA<small>통합 교직원 포털</small></div><button class="active">▣ 메시지함</button><button id="calendar">▦ 학교 일정</button><button id="logout">⇥ 로그아웃</button><div class="bottom">ASEA · Internal Staff</div></aside>
+<aside class="nav"><div class="logo">ASEA<small>통합 교직원 포털</small></div><button class="active">▣ 메시지함</button><button id="calendar">▦ 학교 일정</button><button id="adminbtn">⚙ 가입 승인·대화방 관리</button><button id="logout">⇥ 로그아웃</button><div class="bottom">ASEA · Internal Staff</div></aside>
 <section class="inbox"><div class="head"><h2>메시지함</h2><span>✉</span></div><div class="filters"><button class="selected" data-kind="all">전체</button><button data-kind="department">부서</button><button data-kind="direct">개인</button></div><input class="search" id="search" placeholder="대화방 검색"><div id="rooms"></div><p class="notice">메시지는 서울 시간 기준으로 표시합니다.</p><p id="roomstatus" class="status"></p></section>
 <article id="chat" class="chat"><header class="chatheader"><button id="back" class="sub" style="display:none">←</button><div><strong id="roomtitle">대화방을 선택하십시오</strong><small id="roomdetail">3번 UI · 시간순 누적 기록</small></div></header><div id="messages" class="messages"><div class="date">대화방을 선택하여 기록을 확인하십시오.</div></div><form id="sendform" class="composer"><input id="message" autocomplete="off" maxlength="10000" placeholder="메시지를 입력하세요" required><button class="primary">보내기</button></form></article>
+<dialog id="adminDialog" style="width:min(540px,95vw);border:1px solid #d9e5f4;border-radius:15px;padding:22px">
+<h2>교직원 승인 · 대화방 관리</h2><p class="notice">최고 관리자에게만 허용되는 작업입니다.</p>
+<h3>가입 승인 대기</h3><div id="pending"></div>
+<h3>전체 대화방 만들기</h3><input id="channelTitle" class="search" placeholder="예: 전체 교직원 메시지"><button class="primary" id="createAll">전체 채널 생성</button>
+<p id="adminError" class="status"></p><button class="sub" id="closeAdmin">닫기</button></dialog>
 <div class="mobilebar"><span>홈</span><strong>메시지</strong><span>공지</span><span>일정</span></div></div>
 <script type="module">
 import{createClient}from"https://esm.sh/@supabase/supabase-js@2.57.4";
@@ -25,5 +30,26 @@ document.querySelectorAll("[data-kind]").forEach(b=>b.onclick=()=>{filter=b.data
 async function openRoom(r){selected=r;renderRooms();$("roomtitle").textContent=r.title;$("roomdetail").textContent=r.kind==="all"?"전체 교직원":r.kind==="department"?"부서 대화방":"개인 대화";$("chat").classList.add("visible");$("back").style.display=matchMedia("(max-width:800px)").matches?"block":"none";await loadMessages()}$("back").onclick=()=>$("chat").classList.remove("visible");
 async function loadMessages(){if(!selected)return;let id=selected.id;const{data,error}=await sb.from("notice_messages").select("id,body,sender_id,created_at,category").eq("room_id",id).order("created_at",{ascending:false}).limit(100);if(id!==selected?.id)return;if(error)return status(error.message);const area=$("messages");area.replaceChildren();lastDate="";for(const m of (data||[]).reverse()){const d=day(m.created_at);if(d!==lastDate){const mark=document.createElement("div");mark.className="date";mark.textContent=d;area.append(mark);lastDate=d}const el=document.createElement("div");el.className="bubble"+(m.sender_id===actor.id?" mine":"");const info=document.createElement("small");info.textContent=(m.sender_id===actor.id?"나 · ":"메시지 · ")+fmt(m.created_at);const content=document.createElement("span");content.textContent=m.body;el.append(info,content);area.append(el)}area.scrollTop=area.scrollHeight}
 $("sendform").onsubmit=async e=>{e.preventDefault();if(!selected||!actor)return;const msg=$("message").value.trim();if(!msg)return;const {error}=await sb.from("notice_messages").insert({room_id:selected.id,sender_id:actor.id,body:msg,category:"general_message",client_nonce:crypto.randomUUID()});if(error)return status("전송 실패: "+error.message);$("message").value="";status("");await loadMessages()};
+
+$("adminbtn").onclick=async()=>{if(!actor)return;
+ const {data:p,error:err}=await sb.from("notice_profiles").select("role,status").eq("id",actor.id).single();
+ if(err||p?.role!=="super"||p?.status!=="active"){status("최고 관리자 권한이 필요합니다.");return}
+ $("adminDialog").showModal();await listPending();
+};
+$("closeAdmin").onclick=()=>$("adminDialog").close();
+async function listPending(){
+ const {data,error}=await sb.rpc("notice_pending_staff");const dest=$("pending");dest.replaceChildren();
+ if(error){$("adminError").textContent=error.message;return}
+ if(!data?.length){dest.textContent="승인 대기 교직원이 없습니다.";return}
+ for(const p of data){
+  const item=document.createElement("div");item.className="item";
+  const title=document.createElement("strong");title.textContent=p.full_name+" · "+(p.requested_department||"부서 미지정");
+  const btn=document.createElement("button");btn.className="sub";btn.textContent="승인";
+  btn.onclick=async()=>{btn.disabled=true;const {error}=await sb.rpc("notice_approve_member",{p_user:p.id,p_role:"staff"});if(error){$("adminError").textContent=error.message;btn.disabled=false}else await listPending()};
+  item.append(title,btn);dest.append(item)
+ }
+}
+$("createAll").onclick=async()=>{const name=$("channelTitle").value.trim();if(!name)return;
+ const {error}=await sb.rpc("notice_create_channel",{p_kind:"all",p_title:name});if(error)$("adminError").textContent=error.message;else{$("channelTitle").value="";$("adminError").textContent="전체 대화방을 생성했습니다.";await loadRooms()}};
 setInterval(()=>{if(actor&&selected)loadMessages()},15000);
 </script></body></html>
