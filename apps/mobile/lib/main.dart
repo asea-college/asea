@@ -18,9 +18,9 @@ class _SignInState extends State<SignIn>{
    final sb=Supabase.instance.client;
    final result=await sb.auth.signInWithPassword(email:email.text.trim(),password:pw.text);
    final user=result.user;if(user==null)throw Exception('인증에 실패했습니다.');
-   final profile=await sb.from('notice_profiles').select('status').eq('id',user.id).maybeSingle();
+   final profile=await sb.from('notice_profiles').select('status,role').eq('id',user.id).maybeSingle();
    if(profile?['status']!='active'){await sb.auth.signOut();throw Exception('관리자 승인을 기다리고 있습니다.');}
-   if(mounted)Navigator.pushReplacement(context,MaterialPageRoute(builder:(_)=>const Rooms()));
+   if(mounted)Navigator.pushReplacement(context,MaterialPageRoute(builder:(_)=>Rooms(isAdmin:profile?['role']=='super')));
   }catch(e){if(mounted)setState(()=>error=e.toString());}
   finally{if(mounted)setState(()=>busy=false);}
  }
@@ -37,16 +37,18 @@ class _SignInState extends State<SignIn>{
 }
 class Register extends StatefulWidget {const Register({super.key});@override State<Register> createState()=>_RegisterState();}
 class _RegisterState extends State<Register>{
- final name=TextEditingController(),dept=TextEditingController(),email=TextEditingController(),pw=TextEditingController();
- String status='';bool busy=false;
- @override void dispose(){for(final c in [name,dept,email,pw]){c.dispose();}super.dispose();}
+ final name=TextEditingController(),email=TextEditingController(),pw=TextEditingController();
+ List<Map<String,dynamic>> departments=[];String? chosen;String status='';bool busy=false;
+ @override void initState(){super.initState();loadDepartments();}
+ Future<void> loadDepartments()async {try {final data=await Supabase.instance.client.from('notice_departments').select('id,name').eq('active',true).order('name');if(mounted)setState((){departments=List<Map<String,dynamic>>.from(data);});}catch(e){if(mounted)setState(()=>status='부서 목록을 불러오지 못했습니다: '+e.toString());}}
+ @override void dispose(){for(final c in [name,email,pw]){c.dispose();}super.dispose();}
  Future<void> signup()async{
   setState((){busy=true;status='';});
   try{
-   if(name.text.trim().isEmpty||dept.text.trim().isEmpty)throw Exception('성명과 부서를 입력하십시오.');
+   if(name.text.trim().isEmpty||chosen==null)throw Exception('성명과 부서를 선택하십시오.');
    if(!email.text.contains('@')||pw.text.length<8)throw Exception('이메일과 8자 이상 비밀번호가 필요합니다.');
    await Supabase.instance.client.auth.signUp(email:email.text.trim(),password:pw.text,data:{
-    'asea_notice_signup':'yes','full_name':name.text.trim(),'requested_department':dept.text.trim()
+    'asea_notice_signup':'yes','full_name':name.text.trim(),'requested_department':departments.firstWhere((d)=>d['id']==chosen)['name']
    });
    if(mounted)setState(()=>status='가입 요청이 접수되었습니다. 이메일 확인이 필요한 경우 인증 후 관리자의 승인을 기다리십시오.');
   }catch(e){if(mounted)setState(()=>status=e.toString());}
@@ -54,7 +56,10 @@ class _RegisterState extends State<Register>{
  }
  @override Widget build(BuildContext context)=>Scaffold(appBar:AppBar(title:const Text('교직원 회원가입')),body:SingleChildScrollView(child:Padding(padding:const EdgeInsets.all(22),child:Column(children:[
  TextField(controller:name,decoration:const InputDecoration(labelText:'성명')),
- TextField(controller:dept,decoration:const InputDecoration(labelText:'부서')),
+ DropdownButtonFormField<String>(value:chosen,decoration:const InputDecoration(labelText:'소속 부서',border:OutlineInputBorder()),hint:const Text('부서를 선택하세요'),isExpanded:true,
+ items:departments.map((d)=>DropdownMenuItem<String>(value:d['id'].toString(),child:Text(d['name'].toString()))).toList(),
+ onChanged:(v)=>setState(()=>chosen=v)),
+ if(departments.isEmpty)TextButton(onPressed:loadDepartments,child:const Text('부서 목록 새로고침')),
  TextField(controller:email,keyboardType:TextInputType.emailAddress,decoration:const InputDecoration(labelText:'이메일')),
  TextField(controller:pw,obscureText:true,decoration:const InputDecoration(labelText:'비밀번호 (8자 이상)')),
  const SizedBox(height:18),FilledButton(onPressed:busy?null:signup,child:Text(busy?'신청 중...':'가입 신청')),
@@ -62,7 +67,7 @@ class _RegisterState extends State<Register>{
  ]))));
 }
 
-class Rooms extends StatefulWidget {const Rooms({super.key});@override State<Rooms> createState()=>_RoomsState();}
+class Rooms extends StatefulWidget {final bool isAdmin;const Rooms({super.key,this.isAdmin=false});@override State<Rooms> createState()=>_RoomsState();}
 class _RoomsState extends State<Rooms>{
  List<Map<String,dynamic>> rooms=[];String status='';bool loading=true;
  @override void initState(){super.initState();refresh();}
@@ -71,7 +76,7 @@ class _RoomsState extends State<Rooms>{
    if(mounted)setState((){rooms=List<Map<String,dynamic>>.from(data);status='';loading=false;});
   }catch(e){if(mounted)setState((){status=e.toString();loading=false;});}
  }
- @override Widget build(BuildContext context)=>Scaffold(appBar:AppBar(title:const Text('ASEA · 메시지함'),actions:[IconButton(onPressed:refresh,icon:const Icon(Icons.refresh)),IconButton(onPressed:()async{await Supabase.instance.client.auth.signOut();if(context.mounted)Navigator.pushReplacement(context,MaterialPageRoute(builder:(_)=>const SignIn()));},icon:const Icon(Icons.logout))]),
+ @override Widget build(BuildContext context)=>Scaffold(appBar:AppBar(title:const Text('ASEA · 메시지함'),actions:[if(widget.isAdmin)IconButton(tooltip:'관리자 메뉴',onPressed:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>const AdminConsole())),icon:const Icon(Icons.admin_panel_settings)),IconButton(onPressed:refresh,icon:const Icon(Icons.refresh)),IconButton(onPressed:()async{await Supabase.instance.client.auth.signOut();if(context.mounted)Navigator.pushReplacement(context,MaterialPageRoute(builder:(_)=>const SignIn()));},icon:const Icon(Icons.logout))]),
  body:loading?const Center(child:CircularProgressIndicator()):ListView(children:[
  if(status.isNotEmpty)Padding(padding:const EdgeInsets.all(12),child:Text(status)),
  if(rooms.isEmpty)const Padding(padding:EdgeInsets.all(30),child:Text('참여할 대화방이 없습니다.')),
@@ -87,6 +92,59 @@ class _RoomsState extends State<Rooms>{
  NavigationDestination(icon:Icon(Icons.campaign_outlined),label:'공지'),
  NavigationDestination(icon:Icon(Icons.settings_outlined),label:'설정')]));
 }
+
+class AdminConsole extends StatefulWidget {const AdminConsole({super.key});@override State<AdminConsole> createState()=>_AdminConsoleState();}
+class _AdminConsoleState extends State<AdminConsole>{
+ final sb=Supabase.instance.client;
+ final channel=TextEditingController(),department=TextEditingController();
+ List<Map<String,dynamic>> pending=[],departments=[];
+ String result='';bool loading=false;
+ @override void initState(){super.initState();reload();}
+ @override void dispose(){channel.dispose();department.dispose();super.dispose();}
+ Future<void> reload()async{
+  setState(()=>loading=true);
+  try{
+   final resultSet=await Future.wait([sb.rpc('notice_pending_staff'),sb.from('notice_departments').select('id,name').eq('active',true).order('name')]);
+   if(mounted)setState((){pending=List<Map<String,dynamic>>.from(resultSet[0] as List);departments=List<Map<String,dynamic>>.from(resultSet[1] as List);result='';});
+  }catch(e){if(mounted)setState(()=>result=e.toString());}
+  finally{if(mounted)setState(()=>loading=false);}
+ }
+ Future<void> approve(Map<String,dynamic> person)async{
+  try{
+   final name=(person['requested_department']??'').toString();
+   String? dept;
+   if(name.isNotEmpty){dept=(await sb.rpc('notice_resolve_department',params:{'p_name':name})).toString();}
+   await sb.rpc('notice_approve_member',params:{'p_user':person['id'],'p_department':dept,'p_role':'staff'});
+   await reload();
+  }catch(e){if(mounted)setState(()=>result=e.toString());}
+ }
+ Future<void> addDepartment()async{
+  if(department.text.trim().isEmpty)return;
+  try{await sb.rpc('notice_resolve_department',params:{'p_name':department.text.trim()});department.clear();await reload();}
+  catch(e){if(mounted)setState(()=>result=e.toString());}
+ }
+ Future<void> addChannel()async{
+  if(channel.text.trim().isEmpty)return;
+  try{await sb.rpc('notice_create_channel',params:{'p_kind':'all','p_title':channel.text.trim()});channel.clear();if(mounted)setState(()=>result='전체 메시지 채널을 만들었습니다.');}
+  catch(e){if(mounted)setState(()=>result=e.toString());}
+ }
+ @override Widget build(BuildContext context)=>Scaffold(
+ appBar:AppBar(title:const Text('ASEA 관리자 센터'),actions:[IconButton(onPressed:reload,icon:const Icon(Icons.refresh))]),
+ body:ListView(padding:const EdgeInsets.all(18),children:[
+ const ListTile(leading:Icon(Icons.verified_user),title:Text('교직원 승인'),subtitle:Text('최고 관리자 계정에서만 접근할 수 있습니다.')),
+ if(loading)const LinearProgressIndicator(),
+ if(pending.isEmpty)const ListTile(title:Text('승인 대기 직원 없음')),
+ ...pending.map((p)=>Card(child:ListTile(title:Text(p['full_name']?.toString()??'이름 없음'),subtitle:Text('신청 부서: '+(p['requested_department']?.toString()??'미지정')),trailing:FilledButton(onPressed:()=>approve(p),child:const Text('승인'))))),
+ const Divider(),const ListTile(title:Text('공식 부서 목록'),subtitle:Text('가입자는 이 목록에서만 부서를 선택합니다.')),
+ ...departments.map((d)=>ListTile(leading:const Icon(Icons.account_tree_outlined),title:Text(d['name'].toString()))),
+ TextField(controller:department,decoration:const InputDecoration(labelText:'부서 추가',border:OutlineInputBorder())),
+ FilledButton(onPressed:addDepartment,child:const Text('부서 등록')),
+ const Divider(),TextField(controller:channel,decoration:const InputDecoration(labelText:'전체 메시지 채널명',border:OutlineInputBorder())),
+ FilledButton(onPressed:addChannel,child:const Text('전체 채널 만들기')),
+ if(result.isNotEmpty)Padding(padding:const EdgeInsets.all(12),child:Text(result,style:const TextStyle(color:Colors.red))),
+ ]));
+}
+
 class Thread extends StatefulWidget {
  final Map<String,dynamic> room;const Thread({super.key,required this.room});
  @override State<Thread> createState()=>_ThreadState();
