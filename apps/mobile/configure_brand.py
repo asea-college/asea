@@ -28,15 +28,17 @@ if info.exists():
     info.write_text(text, encoding="utf-8")
     print("iOS display name configured")
 
-# Separate beta identity prevents a collision with historical disposable CI debug signatures.
-# Keep this identifier stable for the ASEA IEUM beta installation line.
+# Dedicated beta package avoids collision with legacy CI debug signatures.
+# Never change this application ID for subsequent beta releases.
 beta_id = "kr.ac.asea.ieum.beta"
 for gradle in (ROOT / "android/app/build.gradle.kts", ROOT / "android/app/build.gradle"):
     if gradle.exists():
         text = gradle.read_text(encoding="utf-8")
-        import re
-        text, count = re.subn(r'(applicationId\\s*[= ]\\s*["\\\'])[^"\\\']+(["\\\'])',
-                              lambda match: match.group(1) + beta_id + match.group(2), text, count=1)
+        text, count = re.subn(r'applicationId\s*=\s*"[^"]+"',
+                              'applicationId = "' + beta_id + '"', text, count=1)
+        if count != 1:
+            text, count = re.subn(r'applicationId\s+"[^"]+"',
+                                  'applicationId "' + beta_id + '"', text, count=1)
         if count != 1:
             raise SystemExit("Android applicationId missing; refuse unsafe build")
         gradle.write_text(text, encoding="utf-8")
