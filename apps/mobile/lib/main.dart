@@ -99,31 +99,156 @@ class _DirectContactPageState extends State<DirectContactPage>{
  Expanded(child:ListView(children:contacts.where((p)=>p['id']!=Supabase.instance.client.auth.currentUser?.id&&p['full_name'].toString().contains(query)).map((p)=>ListTile(
  leading:const CircleAvatar(child:Icon(Icons.person)),title:Text(p['full_name'].toString()),trailing:const Icon(Icons.chat_bubble_outline),onTap:()=>open(p))).toList()))]));
 }
-class Rooms extends StatefulWidget {final bool isAdmin;const Rooms({super.key,this.isAdmin=false});@override State<Rooms> createState()=>_RoomsState();}
+class Rooms extends StatefulWidget {
+ final bool isAdmin;
+ const Rooms({super.key,this.isAdmin=false});
+ @override State<Rooms> createState()=>_RoomsState();
+}
+
 class _RoomsState extends State<Rooms>{
- List<Map<String,dynamic>> rooms=[];String status='';bool loading=true;
+ List<Map<String,dynamic>> rooms=[];
+ String status='';
+ bool loading=true;
+ final scaffoldKey=GlobalKey<ScaffoldState>();
+
  @override void initState(){super.initState();refresh();}
  Future<void> refresh()async{
-  try{final data=await Supabase.instance.client.from('notice_rooms').select('id,title,kind').order('created_at');
+  try{
+   final data=await Supabase.instance.client.from('notice_rooms').select('id,title,kind').order('created_at');
    if(mounted)setState((){rooms=List<Map<String,dynamic>>.from(data);status='';loading=false;});
   }catch(e){if(mounted)setState((){status=e.toString();loading=false;});}
  }
- @override Widget build(BuildContext context)=>Scaffold(appBar:AppBar(title:const Text('아세아 이음 · 메시지함'),actions:[IconButton(tooltip:'오늘의 작은 이음',onPressed:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>const KindnessPage())),icon:const Icon(Icons.favorite_outline)),if(widget.isAdmin)TextButton.icon(onPressed:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>const AdminConsole())),icon:const Icon(Icons.admin_panel_settings),label:const Text('관리자')),IconButton(onPressed:refresh,icon:const Icon(Icons.refresh)),IconButton(onPressed:()async{await Supabase.instance.client.auth.signOut();if(context.mounted)Navigator.pushReplacement(context,MaterialPageRoute(builder:(_)=>const SignIn()));},icon:const Icon(Icons.logout))]),
- body:loading?const Center(child:CircularProgressIndicator()):ListView(children:[
- ListTile(leading:const Icon(Icons.person_add_alt_1),title:const Text('동료 검색 · 개인 메시지 시작'),trailing:const Icon(Icons.chevron_right),onTap:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>const DirectContactPage()))),
- if(status.isNotEmpty)Padding(padding:const EdgeInsets.all(12),child:Text(status)),
- if(rooms.isEmpty)const Padding(padding:EdgeInsets.all(30),child:Text('참여할 대화방이 없습니다.')),
- ...rooms.map((r)=>ListTile(
- leading:CircleAvatar(child:Icon(r['kind']=='all'?Icons.campaign:r['kind']=='department'?Icons.groups:Icons.person)),
- title:Text(r['title'].toString()),subtitle:Text(r['kind']=='all'?'전체':r['kind']=='department'?'부서':'개인'),
- trailing:const Icon(Icons.chevron_right),
- onTap:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>Thread(room:r)))))
- ]),
- bottomNavigationBar:NavigationBar(selectedIndex:1,onDestinationSelected:(index){if(index==1)return;if(index==0){Navigator.push(context,MaterialPageRoute(builder:(_)=>const KindnessPage()));}else if(index==2){Navigator.push(context,MaterialPageRoute(builder:(_)=>const CommunityPage()));}else{Navigator.push(context,MaterialPageRoute(builder:(_)=>const CommunityPage()));}},destinations:[
- NavigationDestination(icon:Icon(Icons.home_outlined),label:'홈'),
- NavigationDestination(icon:Icon(Icons.chat_bubble_outline),label:'메시지'),
- NavigationDestination(icon:Icon(Icons.campaign_outlined),label:'공지'),
- NavigationDestination(icon:Icon(Icons.settings_outlined),label:'설정')]));
+
+ void go(Widget page){
+  if(scaffoldKey.currentState?.isDrawerOpen??false)Navigator.pop(context);
+  Navigator.push(context,MaterialPageRoute(builder:(_)=>page));
+ }
+
+ Widget drawerEntry(IconData icon,String title,VoidCallback onTap,{String? caption}){
+  return ListTile(
+   contentPadding:const EdgeInsets.symmetric(horizontal:18,vertical:2),
+   leading:Icon(icon,color:const Color(0xff2a5485),size:22),
+   title:Text(title,style:const TextStyle(fontWeight:FontWeight.w600,fontSize:15)),
+   subtitle:caption==null?null:Text(caption,style:const TextStyle(fontSize:11)),
+   onTap:onTap,
+   shape:RoundedRectangleBorder(borderRadius:BorderRadius.circular(12)));
+ }
+
+ Widget section(String title)=>Padding(
+  padding:const EdgeInsets.fromLTRB(22,20,12,6),
+  child:Text(title,style:const TextStyle(fontWeight:FontWeight.w700,fontSize:11,color:Color(0xff7889a0),letterSpacing:1)));
+
+ Widget buildDrawer()=>Drawer(
+  width:300,
+  backgroundColor:const Color(0xfff9fbfe),
+  child:SafeArea(child:Column(children:[
+   Padding(padding:const EdgeInsets.fromLTRB(20,20,12,14),child:Row(children:[
+    const CircleAvatar(radius:21,backgroundColor:Color(0xffe3edf9),child:Icon(Icons.hub_rounded,color:Color(0xff204b83))),
+    const SizedBox(width:12),
+    const Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
+     Text('아세아 이음',style:TextStyle(fontSize:21,fontWeight:FontWeight.w700,letterSpacing:-.6,color:Color(0xff1b375a))),
+     Text('함께 이어가는 소통',style:TextStyle(fontSize:11,color:Color(0xff70819b)))])),
+    IconButton(tooltip:'메뉴 닫기',onPressed:()=>Navigator.pop(context),icon:const Icon(Icons.chevron_left))
+   ])),
+   const Divider(height:1),
+   Expanded(child:ListView(padding:const EdgeInsets.symmetric(horizontal:10,vertical:10),children:[
+    section('WORKSPACE'),
+    drawerEntry(Icons.space_dashboard_outlined,'홈 대시보드',()=>go(const CommunityPage())),
+    drawerEntry(Icons.forum_outlined,'전체·부서·개인 대화',()=>Navigator.pop(context)),
+    drawerEntry(Icons.campaign_outlined,'공지 및 확인 응답',()=>go(const CommunityPage()),caption:'현재 공지 기능과 통합 진행 중'),
+    drawerEntry(Icons.folder_copy_outlined,'부서·업무 인수인계',()=>go(const DirectContactPage()),caption:'관련 동료 및 대화 찾기'),
+    section('COMMUNITY'),
+    drawerEntry(Icons.how_to_vote_outlined,'투표 및 결과 집계',()=>go(const CommunityPage())),
+    drawerEntry(Icons.event_available_outlined,'일정 조율',()=>go(const CommunityPage())),
+    drawerEntry(Icons.volunteer_activism_outlined,'오늘의 마니또',()=>go(const KindnessPage())),
+    drawerEntry(Icons.favorite_border,'익명 감사 우체통',()=>go(const KindnessPage())),
+    drawerEntry(Icons.coffee_outlined,'랜덤 커피 메이트',()=>go(const KindnessPage()),caption:'공통 소통 화면'),
+    drawerEntry(Icons.extension_outlined,'소통 놀이터',()=>go(const CommunityPage())),
+    drawerEntry(Icons.radio_outlined,'이음 방송국',()=>go(const CommunityPage()),caption:'편성표 조회'),
+    section('ACCOUNT'),
+    if(widget.isAdmin)drawerEntry(Icons.admin_panel_settings_outlined,'최고 관리자 센터',()=>go(const AdminConsole())),
+    drawerEntry(Icons.manage_accounts_outlined,'프로필·설정',()=>go(const IeumSettingsPage())),
+   ])),
+   const Divider(height:1),
+   Padding(padding:const EdgeInsets.all(16),child:Row(children:[
+    const Expanded(child:Text('ASEA IEUM · Beta',style:TextStyle(fontSize:12,color:Color(0xff7b889b)))),
+    TextButton(onPressed:()async{
+      Navigator.pop(context);
+      await Supabase.instance.client.auth.signOut();
+      if(mounted)Navigator.pushReplacement(context,MaterialPageRoute(builder:(_)=>const SignIn()));
+    },child:const Text('로그아웃'))
+   ]))
+  ])));
+
+ @override Widget build(BuildContext context)=>Scaffold(
+  key:scaffoldKey,
+  drawer:buildDrawer(),
+  drawerEnableOpenDragGesture:true,
+  drawerEdgeDragWidth:36,
+  appBar:AppBar(
+   leading:IconButton(tooltip:'전체 메뉴 열기',icon:const Icon(Icons.menu_rounded),
+    onPressed:()=>scaffoldKey.currentState?.openDrawer()),
+   title:const Text('아세아 이음'),
+   actions:[
+    IconButton(tooltip:'오늘의 작은 이음',onPressed:()=>go(const KindnessPage()),icon:const Icon(Icons.favorite_outline)),
+    if(widget.isAdmin)IconButton(tooltip:'관리자',onPressed:()=>go(const AdminConsole()),icon:const Icon(Icons.admin_panel_settings_outlined)),
+    IconButton(tooltip:'메시지 새로고침',onPressed:refresh,icon:const Icon(Icons.refresh)),
+   ]),
+  body:loading?const Center(child:CircularProgressIndicator()):ListView(padding:const EdgeInsets.fromLTRB(14,12,14,20),children:[
+   Container(padding:const EdgeInsets.symmetric(horizontal:16,vertical:20),decoration:BoxDecoration(
+    color:const Color(0xffedf4fd),borderRadius:BorderRadius.circular(18)),
+    child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
+     const Text('이음 대화',style:TextStyle(fontSize:23,fontWeight:FontWeight.w700,color:Color(0xff1c3d67))),
+     const SizedBox(height:5),
+     const Text('동료와 나누는 메시지와 업무의 흐름',style:TextStyle(color:Color(0xff6b8098))),
+     const SizedBox(height:12),
+     FilledButton.icon(onPressed:()=>go(const DirectContactPage()),
+      icon:const Icon(Icons.add_comment_outlined),label:const Text('동료에게 새 메시지'))
+    ])),
+   if(status.isNotEmpty)Padding(padding:const EdgeInsets.all(12),child:Text(status)),
+   if(rooms.isEmpty)const Padding(padding:EdgeInsets.all(30),
+    child:Text('참여할 대화방이 없습니다. 관리자에게 부서 채널 개설을 요청하거나 동료에게 메시지를 보내십시오.')),
+   ...rooms.map((r)=>Card(margin:const EdgeInsets.symmetric(vertical:5),child:ListTile(
+    leading:CircleAvatar(backgroundColor:const Color(0xffe8eef7),
+      child:Icon(r['kind']=='all'?Icons.campaign_outlined:r['kind']=='department'?Icons.groups_outlined:Icons.person_outline,color:const Color(0xff245a9c))),
+    title:Text(r['title'].toString(),style:const TextStyle(fontWeight:FontWeight.w600)),
+    subtitle:Text(r['kind']=='all'?'전체 교직원':r['kind']=='department'?'부서 대화':'개인 메시지'),
+    trailing:const Icon(Icons.chevron_right),
+    onTap:()=>go(Thread(room:r))))),
+  ]),
+  bottomNavigationBar:NavigationBar(selectedIndex:1,onDestinationSelected:(index){
+   switch(index){
+    case 0:go(const IeumSettingsPage());break;
+    case 1:scaffoldKey.currentState?.openDrawer();break;
+    case 2:go(const CommunityPage());break;
+    case 3:go(const KindnessPage());break;
+   }
+  },destinations:const [
+   NavigationDestination(icon:Icon(Icons.grid_view_rounded),label:'둘러보기'),
+   NavigationDestination(icon:Icon(Icons.menu_open_rounded),label:'전체 메뉴'),
+   NavigationDestination(icon:Icon(Icons.how_to_vote_outlined),label:'소통'),
+   NavigationDestination(icon:Icon(Icons.favorite_outline),label:'마니또'),
+  ])
+ );
+}
+
+class IeumSettingsPage extends StatelessWidget{
+ const IeumSettingsPage({super.key});
+ @override Widget build(BuildContext context){
+  final user=Supabase.instance.client.auth.currentUser;
+  return Scaffold(appBar:AppBar(title:const Text('프로필·설정')),
+   body:ListView(padding:const EdgeInsets.all(18),children:[
+    Card(child:ListTile(leading:const Icon(Icons.account_circle_outlined),
+     title:Text(user?.email??'로그인 계정'),subtitle:const Text('아세아 이음 · 계정 정보'))),
+    const Card(child:ListTile(leading:Icon(Icons.swipe),
+     title:Text('메뉴 여는 방법'),
+     subtitle:Text('왼쪽 가장자리에서 오른쪽으로 밀거나 상단 메뉴 아이콘을 누르십시오. 열린 메뉴를 왼쪽으로 밀면 닫힙니다.'))),
+    const Card(child:ListTile(leading:Icon(Icons.accessibility_new),
+     title:Text('화면과 글꼴'),
+     subtitle:Text('Pretendard 서체 및 반응형 화면을 적용합니다.'))),
+    const Padding(padding:EdgeInsets.all(12),child:Text('알림 수신과 개인정보 설정은 향후 계정별 정책과 연결됩니다.',style:TextStyle(color:Colors.grey)))
+   ]));
+ }
 }
 
 class AdminConsole extends StatefulWidget {const AdminConsole({super.key});@override State<AdminConsole> createState()=>_AdminConsoleState();}
