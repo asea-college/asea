@@ -12,7 +12,7 @@
 <h2>교직원 승인 · 대화방 관리</h2><p class="notice">최고 관리자에게만 허용되는 작업입니다.</p>
 <h3>가입 승인 대기</h3><div id="pending"></div>
 <h3>전체 대화방 만들기</h3><input id="channelTitle" class="search" placeholder="예: 전체 교직원 메시지"><button class="primary" id="createAll">전체 채널 생성</button>
-<p id="adminError" class="status"></p><button class="sub" id="closeAdmin">닫기</button></dialog>
+<h3>최고 관리자 지정</h3><div id="staffForAdmin"></div><h3>부서 목록 관리</h3><input id="addDepartment" class="search" placeholder="새 부서명"><button id="saveDepartment" class="sub">부서 추가</button><p id="adminError" class="status"></p><button class="sub" id="closeAdmin">닫기</button></dialog>
 <div class="mobilebar"><span>홈</span><strong>메시지</strong><span>공지</span><span>일정</span></div></div>
 <script type="module">
 import{createClient}from"https://esm.sh/@supabase/supabase-js@2.57.4";
@@ -48,7 +48,7 @@ $("closeDirect").onclick=()=>$("directDialog").close();
 $("adminbtn").onclick=async()=>{if(!actor)return;
  const {data:p,error:err}=await sb.from("notice_profiles").select("role,status").eq("id",actor.id).single();
  if(err||p?.role!=="super"||p?.status!=="active"){status("최고 관리자 권한이 필요합니다.");return}
- $("adminDialog").showModal();await listPending();
+ $("adminDialog").showModal();await listPending();await loadStaffForAdmin();
 };
 $("closeAdmin").onclick=()=>$("adminDialog").close();
 async function listPending(){
@@ -63,6 +63,9 @@ async function listPending(){
   item.append(title,btn);dest.append(item)
  }
 }
+async function loadStaffForAdmin(){const {data,error}=await sb.rpc("notice_staff_directory");const panel=$("staffForAdmin");panel.replaceChildren();if(error){$("adminError").textContent=error.message;return}
+for(const p of data||[]){if(p.id===actor?.id)continue;const b=document.createElement("button");b.className="sub";b.style.margin="3px";b.textContent=p.full_name+" · 최고관리자 지정";b.onclick=async()=>{if(!confirm(p.full_name+" 계정에 최고 관리자 권한을 부여하시겠습니까?"))return;const {error}=await sb.rpc("notice_grant_super",{p_user:p.id});$("adminError").textContent=error?error.message:"권한 부여 요청이 처리되었습니다."};panel.append(b)}}
+$("saveDepartment").onclick=async()=>{const name=$("addDepartment").value.trim();if(!name)return;const {error}=await sb.rpc("notice_resolve_department",{p_name:name});$("adminError").textContent=error?error.message:"부서를 등록했습니다.";if(!error)$("addDepartment").value=""};
 $("createAll").onclick=async()=>{const name=$("channelTitle").value.trim();if(!name)return;
  const {error}=await sb.rpc("notice_create_channel",{p_kind:"all",p_title:name});if(error)$("adminError").textContent=error.message;else{$("channelTitle").value="";$("adminError").textContent="전체 대화방을 생성했습니다.";await loadRooms()}};
 setInterval(()=>{if(actor&&selected)loadMessages()},15000);
