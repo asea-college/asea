@@ -15,6 +15,7 @@ jobs:
           cd apps/mobile
           flutter create --platforms=ios --project-name asea_staff .
           rm -f test/widget_test.dart analysis_options.yaml
+          python3 configure_brand.py
           flutter pub get
           flutter analyze --no-fatal-infos
       - name: Compile iOS simulator (not signed)
