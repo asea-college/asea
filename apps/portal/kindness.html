@@ -26,7 +26,7 @@ textarea{height:110px;resize:vertical}.help{font-size:12px;color:#6e819d;line-he
 <div class="card"><h2>📬 내게 도착한 응원</h2><div id="inbox">받은 메시지가 없습니다.</div></div>
 </section><aside>
 <div class="card"><h2>🧩 참여 설정</h2><label class="switch"><input type="checkbox" id="optOut"> 마니또 참여하지 않기</label><p class="help">기본 참여 상태이며 언제든 참여를 중지할 수 있습니다. 참여를 중지한 이후의 새 배정에서 제외됩니다.</p><button class="secondary" id="saveOpt">참여 설정 저장</button></div>
-<div class="card"><h2>☕ 랜덤 커피 메이트</h2><p class="subtitle">다른 부서 동료와 10분 동안 이야기 나눠 보세요.</p><div class="tile">커피나 식사는 각자 자유롭게 선택합니다. 초대받은 사람도 거절할 수 있고 비용 부담은 없습니다.</div><p class="help">상호 동의 기반 매칭·시간 조율은 추가 구현 예정입니다.</p></div>
+<div class="card"><h2>☕ 랜덤 커피 메이트</h2><p class="subtitle">다른 부서 동료와 10분 동안 이야기 나눠 보세요.</p><div class="tile">커피나 식사는 각자 자유롭게 선택합니다. 초대받은 사람도 거절할 수 있고 비용 부담은 없습니다.</div><label class="switch"><input id="coffeeOpt" type="checkbox"> 커피 메이트 참여 신청</label><p><button class="secondary" id="coffeeJoin">참여 설정 저장</button> <button class="secondary" id="coffeeMatch">오늘 매칭해 보기</button></p><div id="coffeeState" class="help">상호 수락 시 짧은 대화를 제안합니다.</div><div id="coffeeResponse" hidden><button class="secondary" id="coffeeAccept">참여 수락</button><button class="secondary" id="coffeeDecline">정중히 거절</button></div><p class="help">서로 동의한 뒤 대화·시간을 조율하십시오. 비용 지출은 선택입니다.</p></div>
 <div class="card"><h2>🌱 오늘의 선한 행동</h2><div class="tile" id="goodDeed">상대방을 존중하는 작은 행동을 실천해 보세요.</div><button style="margin-top:13px" class="secondary" id="draw">다른 아이디어 보기</button></div>
 <div class="card"><h2>🔗 부서 간 이음 릴레이</h2><p class="subtitle">감사와 응원을 부서에서 다른 부서로 전합니다.</p><textarea id="relayText" maxlength="500" placeholder="이번 주 도움을 주신 동료 부서에 감사드립니다."></textarea><button class="secondary" id="sendRelay">응원 사연 제출</button><p class="help">부서별 공개 게시판과 릴레이 순서 지정은 추후 연결됩니다.</p></div>
 <div class="card"><h2>📻 이음 방송국 사연함</h2><textarea id="radioText" maxlength="500" placeholder="직원들에게 전하고 싶은 미담이나 사연을 남겨 주세요."></textarea><button class="secondary" id="sendRadio">DJ에게 사연 제출</button><p class="help">사연은 바로 공개되지 않습니다. 소개 전 당사자의 동의와 내용 검토가 필요합니다.</p></div>
@@ -43,7 +43,23 @@ $("missionText").textContent=m.opted_out?"설정을 변경하면 다음 배정�
 $("missionState").textContent=m.completed?"오늘의 미션 완료":m.mission_day?"오늘의 작은 이음":"배정 대기";$("complete").disabled=!m.mission_day||m.completed||m.opted_out}
 async function inbox(){const r=await supa.rpc("notice_kindness_inbox");const el=$("inbox");el.replaceChildren();if(r.error){el.textContent=r.error.message;return}if(!r.data?.length){el.textContent="아직 도착한 익명 응원이 없습니다.";return}for(const n of r.data){const b=document.createElement("div");b.className="line";const t=document.createElement("small");t.className="info";t.textContent=new Date(n.created_at).toLocaleString("ko-KR",{timeZone:"Asia/Seoul"});const p=document.createElement("p");p.textContent=n.body;b.append(t,p);el.append(b)}}
 async function boot(){const result=await supa.auth.getUser();self=result.data.user;if(!self){$("gate").textContent="먼저 메시지함에서 로그인해 주십시오.";return}const prof=await supa.from("notice_profiles").select("status").eq("id",self.id).maybeSingle();if(prof.data?.status!=="active"){$("gate").textContent="승인된 교직원만 이용할 수 있습니다.";return}
-const directory=await supa.rpc("notice_staff_directory");if(directory.error){$("gate").textContent=directory.error.message;return}for(const user of directory.data||[]){if(user.id===self.id)continue;const opt=document.createElement("option");opt.value=user.id;opt.textContent=user.full_name;$("target").append(opt)}$("gate").hidden=true;$("main").hidden=false;$("date").textContent=new Date().toLocaleDateString("ko-KR",{timeZone:"Asia/Seoul",month:"long",day:"numeric",weekday:"long"});await Promise.all([myMission(),inbox()])}
+const directory=await supa.rpc("notice_staff_directory");if(directory.error){$("gate").textContent=directory.error.message;return}for(const user of directory.data||[]){if(user.id===self.id)continue;const opt=document.createElement("option");opt.value=user.id;opt.textContent=user.full_name;$("target").append(opt)}$("gate").hidden=true;$("main").hidden=false;$("date").textContent=new Date().toLocaleDateString("ko-KR",{timeZone:"Asia/Seoul",month:"long",day:"numeric",weekday:"long"});await Promise.all([myMission(),inbox(),coffeeStatus()])}
+let coffeeId=null;
+async function coffeeStatus(){
+ const r=await supa.rpc("notice_coffee_my_match");if(r.error){status(r.error.message);return}
+ const m=r.data?.[0];if(!m)return;
+ $("coffeeOpt").checked=!!m.enabled;coffeeId=m.match_id;
+ if(!m.match_id){$("coffeeState").textContent=m.enabled?"오늘 매칭해 보기를 누르면 참여 중인 동료와 연결됩니다.":"참여 신청 후 매칭할 수 있습니다."; $("coffeeResponse").hidden=true;return}
+ $("coffeeState").textContent="오늘의 커피 메이트: "+(m.partner_name||"동료")+(m.partner_department?" · "+m.partner_department:"")+
+  " / 나의 응답: "+(m.my_acceptance===null?"미정":m.my_acceptance?"참석":"거절")+
+  " / 상대 응답: "+(m.partner_acceptance===null?"미정":m.partner_acceptance?"참석":"거절");
+ $("coffeeResponse").hidden=false;
+}
+$("coffeeJoin").onclick=async()=>{const r=await supa.rpc("notice_coffee_participate",{p_enabled:$("coffeeOpt").checked});status(r.error?r.error.message:"커피 메이트 참여 설정을 저장했습니다.");if(!r.error)await coffeeStatus()};
+$("coffeeMatch").onclick=async()=>{const r=await supa.rpc("notice_coffee_match");status(r.error?r.error.message:r.data?"커피 메이트가 연결되었습니다. 양쪽 모두 수락해야 합니다.":"현재 매칭 가능한 참여자가 없습니다.");if(!r.error)await coffeeStatus()};
+async function respondCoffee(value){if(!coffeeId)return;const r=await supa.rpc("notice_coffee_respond",{p_match:coffeeId,p_accept:value});status(r.error?r.error.message:"응답했습니다.");if(!r.error)await coffeeStatus()}
+$("coffeeAccept").onclick=()=>respondCoffee(true);$("coffeeDecline").onclick=()=>respondCoffee(false);
+
 $("reload").onclick=myMission;$("saveOpt").onclick=async()=>{const r=await supa.rpc("notice_kindness_opt",{p_opt_out:$("optOut").checked});status(r.error?r.error.message:"참여 설정을 저장했습니다.");if(!r.error)await myMission()};
 $("complete").onclick=async()=>{const r=await supa.rpc("notice_kindness_complete");status(r.error?r.error.message:"오늘의 미션을 완료로 표시했습니다.");if(!r.error)await myMission()};
 async function send(channel,text,id){status("");const body=$(text).value.trim();if(!body)return status("내용을 입력하십시오.");const r=await supa.rpc("notice_kindness_send",{p_recipient:id||null,p_channel:channel,p_body:body});if(r.error)return status(r.error.message);$(text).value="";status(channel==="anonymous_thanks"?"익명 응원을 전달했습니다.":"사연이 접수되었습니다. 공개 전 검토가 필요합니다.")}
