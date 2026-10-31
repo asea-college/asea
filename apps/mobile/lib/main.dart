@@ -2,6 +2,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'kindness.dart';
+import 'community.dart';
 const url='https://zbpeyklwpotjyveipzxd.supabase.co';
 const key='sb_publishable_DxtNEPtU2KktlcRQnQx9jA_szCPFzMj';
 Future<void> main() async {
@@ -118,7 +119,7 @@ class _RoomsState extends State<Rooms>{
  trailing:const Icon(Icons.chevron_right),
  onTap:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>Thread(room:r)))))
  ]),
- bottomNavigationBar:NavigationBar(selectedIndex:1,onDestinationSelected:(index){if(index==1)return;if(index==0||index==2){Navigator.push(context,MaterialPageRoute(builder:(_)=>const Rooms()));}else{Navigator.push(context,MaterialPageRoute(builder:(_)=>const KindnessPage()));}},destinations:[
+ bottomNavigationBar:NavigationBar(selectedIndex:1,onDestinationSelected:(index){if(index==1)return;if(index==0){Navigator.push(context,MaterialPageRoute(builder:(_)=>const KindnessPage()));}else if(index==2){Navigator.push(context,MaterialPageRoute(builder:(_)=>const CommunityPage()));}else{Navigator.push(context,MaterialPageRoute(builder:(_)=>const CommunityPage()));}},destinations:[
  NavigationDestination(icon:Icon(Icons.home_outlined),label:'홈'),
  NavigationDestination(icon:Icon(Icons.chat_bubble_outline),label:'메시지'),
  NavigationDestination(icon:Icon(Icons.campaign_outlined),label:'공지'),
