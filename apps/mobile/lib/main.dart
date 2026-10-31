@@ -22,7 +22,8 @@ class _SignInState extends State<SignIn>{
    final profile=await sb.from('notice_profiles').select('status,role').eq('id',user.id).maybeSingle();
    if(profile?['status']!='active'){await sb.auth.signOut();throw Exception('관리자 승인을 기다리고 있습니다.');}
    if(mounted)Navigator.pushReplacement(context,MaterialPageRoute(builder:(_)=>Rooms(isAdmin:profile?['role']=='super')));
-  }catch(e){if(mounted)setState(()=>error=e.toString());}
+  }on AuthException catch(e){if(mounted)setState(()=>error=e.statusCode=='400'?'로그인 정보를 확인하십시오. 계정 이메일이나 비밀번호가 일치하지 않습니다.':e.message);}
+  catch(e){if(mounted)setState(()=>error='로그인 처리에 실패했습니다. 다시 시도하십시오.');}
   finally{if(mounted)setState(()=>busy=false);}
  }
  @override Widget build(BuildContext context)=>Scaffold(backgroundColor:const Color(0xfff1f5fb),body:Center(child:SingleChildScrollView(child:ConstrainedBox(constraints:const BoxConstraints(maxWidth:400),child:Card(child:Padding(padding:const EdgeInsets.all(24),child:Column(mainAxisSize:MainAxisSize.min,children:[
