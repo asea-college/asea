@@ -1,0 +1,53 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>아세아 이음 · 오늘의 작은 이음</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#f0f4fb;color:#21395e;font:15px "Malgun Gothic",sans-serif}
+header{background:#174487;color:#fff;padding:20px 4vw;display:flex;justify-content:space-between;align-items:center}header a{color:#fff}
+.wrap{max-width:1060px;margin:auto;padding:24px}.subtitle{color:#61748f;margin-top:0}
+.columns{display:grid;grid-template-columns:1.4fr 1fr;gap:18px}.card{background:white;border:1px solid #dfe8f4;border-radius:16px;padding:24px;margin-bottom:18px;box-shadow:0 4px 18px #233f7010}
+.headline{display:flex;justify-content:space-between;align-items:center;gap:10px}.tag{font-size:12px;background:#e7f1ff;color:#164e9f;padding:7px 11px;border-radius:18px}
+.hero{background:linear-gradient(120deg,#123d87,#276bc3);color:white;border-radius:16px;padding:27px;margin-bottom:18px}
+.hero .soft{color:#d5e6ff}h1{font-size:27px;margin:8px 0}h2{font-size:20px;margin:3px 0 13px}
+.mission{background:#f3f7fe;border:1px solid #dce7f7;border-radius:14px;padding:22px;min-height:150px;display:flex;flex-direction:column;gap:12px;justify-content:center}
+.mission strong{font-size:23px}button{font:inherit;cursor:pointer;border:0;border-radius:9px;padding:11px 15px;background:#225bbc;color:white}button:disabled{opacity:.5;cursor:default}.secondary{background:#e9f1fd;color:#24529a}
+label{display:block;font-weight:600;font-size:13px;margin:12px 0}select,textarea{width:100%;font:inherit;padding:12px;border-radius:9px;border:1px solid #cbd8ec;margin-top:8px}
+textarea{height:110px;resize:vertical}.help{font-size:12px;color:#6e819d;line-height:1.5}.line{padding:13px 0;border-bottom:1px solid #e4eaf3;white-space:pre-wrap;overflow-wrap:anywhere}.tile{border-radius:12px;background:#f1f5fb;padding:15px;line-height:1.6}
+.info{font-size:13px;color:#556e92}.danger{color:#ad4b37}.switch{display:flex;gap:12px;align-items:center}.switch input{width:20px;height:20px}#alert{color:#a34036;padding:0 0 15px}.grid-mini{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+@media(max-width:750px){.columns{grid-template-columns:1fr}.wrap{padding:14px}.card{padding:17px}.grid-mini{grid-template-columns:1fr}header{padding:17px}}
+</style></head><body>
+<header><strong>아세아 이음 <span style="font-weight:400;font-size:12px">ASEA IEUM</span></strong><a href="./community.html">소통센터로 돌아가기</a></header>
+<div class="wrap"><div class="hero"><div class="soft">함께 이어가는 소통 · IEUM KINDNESS</div><h1>💝 오늘의 작은 이음</h1><div class="soft">부담 없는 마음과 따뜻한 행동으로 연결되는 하루</div></div>
+<div id="gate" class="card">교직원 로그인 상태를 확인하고 있습니다.</div>
+<div id="main" hidden><div id="alert"></div><div class="columns"><section>
+<div class="card"><div class="headline"><h2>🎁 오늘의 마니또</h2><span class="tag" id="date">오늘</span></div>
+<div class="mission"><span class="info" id="missionState">오늘의 미션을 확인하고 있습니다.</span><strong id="recipient">배정 대기 중</strong><p id="missionText">평일마다 새로운 배려 미션이 도착합니다.</p></div>
+<div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:18px"><button id="complete">미션 완료 표시</button><button class="secondary" id="reload">새로고침</button></div>
+<p class="help">선물 구매는 필수가 아닙니다. 참여하지 않은 날에도 인사평가나 순위에 영향이 없습니다. 마니또 정체는 상대방에게 공개하지 않습니다.</p></div>
+<div class="card"><h2>💌 익명 감사 우체통</h2><p class="subtitle">고마웠던 동료에게 익명의 짧은 응원을 전하십시오.</p><label>받는 동료<select id="target"><option value="">받는 사람 선택</option></select></label><label>따뜻한 한마디<textarea id="letter" maxlength="500" placeholder="오늘 도와주셔서 감사했습니다. 좋은 하루 보내세요!"></textarea></label><button id="sendThanks">익명 감사 보내기</button><p class="help">하루 최대 3건. 발송자는 수신함에 표시하지 않지만 서버 감사 기록에는 보관됩니다. 불편한 메시지는 관리자에게 신고할 수 있습니다.</p></div>
+<div class="card"><h2>📬 내게 도착한 응원</h2><div id="inbox">받은 메시지가 없습니다.</div></div>
+</section><aside>
+<div class="card"><h2>🧩 참여 설정</h2><label class="switch"><input type="checkbox" id="optOut"> 마니또 참여하지 않기</label><p class="help">기본 참여 상태이며 언제든 참여를 중지할 수 있습니다. 참여를 중지한 이후의 새 배정에서 제외됩니다.</p><button class="secondary" id="saveOpt">참여 설정 저장</button></div>
+<div class="card"><h2>☕ 랜덤 커피 메이트</h2><p class="subtitle">다른 부서 동료와 10분 동안 이야기 나눠 보세요.</p><div class="tile">커피나 식사는 각자 자유롭게 선택합니다. 초대받은 사람도 거절할 수 있고 비용 부담은 없습니다.</div><p class="help">상호 동의 기반 매칭·시간 조율은 추가 구현 예정입니다.</p></div>
+<div class="card"><h2>🌱 오늘의 선한 행동</h2><div class="tile" id="goodDeed">상대방을 존중하는 작은 행동을 실천해 보세요.</div><button style="margin-top:13px" class="secondary" id="draw">다른 아이디어 보기</button></div>
+<div class="card"><h2>🔗 부서 간 이음 릴레이</h2><p class="subtitle">감사와 응원을 부서에서 다른 부서로 전합니다.</p><textarea id="relayText" maxlength="500" placeholder="이번 주 도움을 주신 동료 부서에 감사드립니다."></textarea><button class="secondary" id="sendRelay">응원 사연 제출</button><p class="help">부서별 공개 게시판과 릴레이 순서 지정은 추후 연결됩니다.</p></div>
+<div class="card"><h2>📻 이음 방송국 사연함</h2><textarea id="radioText" maxlength="500" placeholder="직원들에게 전하고 싶은 미담이나 사연을 남겨 주세요."></textarea><button class="secondary" id="sendRadio">DJ에게 사연 제출</button><p class="help">사연은 바로 공개되지 않습니다. 소개 전 당사자의 동의와 내용 검토가 필요합니다.</p></div>
+</aside></div></div></div>
+<script type="module">
+import{createClient}from"https://esm.sh/@supabase/supabase-js@2.57.4";
+const supa=createClient("https://zbpeyklwpotjyveipzxd.supabase.co","sb_publishable_DxtNEPtU2KktlcRQnQx9jA_szCPFzMj");
+const $=id=>document.getElementById(id);let self=null;
+function status(m){$("alert").textContent=m||""}
+const tasks={greeting:"가벼운 인사나 미소로 하루를 시작해 보세요.",gratitude:"오늘 상대방에게 고마운 점을 한마디 전해 보세요.",help:"필요한 작은 도움을 제안해 보세요.",encourage:"따뜻한 응원 메시지를 전해 보세요.",coffee_optional:"커피 한 잔이나 짧은 대화를 제안해 보세요. 구매는 선택입니다."};
+async function myMission(){const r=await supa.rpc("notice_kindness_my_status");if(r.error){status(r.error.message);return}const m=r.data?.[0];if(!m)return; $("optOut").checked=!!m.opted_out;
+$("recipient").textContent=m.opted_out?"참여 중지됨":m.recipient_name?m.recipient_name+(m.recipient_department?" · "+m.recipient_department:""):"오늘 배정을 기다리고 있습니다";
+$("missionText").textContent=m.opted_out?"설정을 변경하면 다음 배정부터 참여할 수 있습니다.":tasks[m.mission_code]||"매일 평일 오전 9시에 미션이 배정되도록 준비 중입니다.";
+$("missionState").textContent=m.completed?"오늘의 미션 완료":m.mission_day?"오늘의 작은 이음":"배정 대기";$("complete").disabled=!m.mission_day||m.completed||m.opted_out}
+async function inbox(){const r=await supa.rpc("notice_kindness_inbox");const el=$("inbox");el.replaceChildren();if(r.error){el.textContent=r.error.message;return}if(!r.data?.length){el.textContent="아직 도착한 익명 응원이 없습니다.";return}for(const n of r.data){const b=document.createElement("div");b.className="line";const t=document.createElement("small");t.className="info";t.textContent=new Date(n.created_at).toLocaleString("ko-KR",{timeZone:"Asia/Seoul"});const p=document.createElement("p");p.textContent=n.body;b.append(t,p);el.append(b)}}
+async function boot(){const result=await supa.auth.getUser();self=result.data.user;if(!self){$("gate").textContent="먼저 메시지함에서 로그인해 주십시오.";return}const prof=await supa.from("notice_profiles").select("status").eq("id",self.id).maybeSingle();if(prof.data?.status!=="active"){$("gate").textContent="승인된 교직원만 이용할 수 있습니다.";return}
+const directory=await supa.rpc("notice_staff_directory");if(directory.error){$("gate").textContent=directory.error.message;return}for(const user of directory.data||[]){if(user.id===self.id)continue;const opt=document.createElement("option");opt.value=user.id;opt.textContent=user.full_name;$("target").append(opt)}$("gate").hidden=true;$("main").hidden=false;$("date").textContent=new Date().toLocaleDateString("ko-KR",{timeZone:"Asia/Seoul",month:"long",day:"numeric",weekday:"long"});await Promise.all([myMission(),inbox()])}
+$("reload").onclick=myMission;$("saveOpt").onclick=async()=>{const r=await supa.rpc("notice_kindness_opt",{p_opt_out:$("optOut").checked});status(r.error?r.error.message:"참여 설정을 저장했습니다.");if(!r.error)await myMission()};
+$("complete").onclick=async()=>{const r=await supa.rpc("notice_kindness_complete");status(r.error?r.error.message:"오늘의 미션을 완료로 표시했습니다.");if(!r.error)await myMission()};
+async function send(channel,text,id){status("");const body=$(text).value.trim();if(!body)return status("내용을 입력하십시오.");const r=await supa.rpc("notice_kindness_send",{p_recipient:id||null,p_channel:channel,p_body:body});if(r.error)return status(r.error.message);$(text).value="";status(channel==="anonymous_thanks"?"익명 응원을 전달했습니다.":"사연이 접수되었습니다. 공개 전 검토가 필요합니다.")}
+$("sendThanks").onclick=()=>send("anonymous_thanks","letter",$("target").value);$("sendRelay").onclick=()=>send("department_relay","relayText",null);$("sendRadio").onclick=()=>send("radio_story","radioText",null);
+const ideas=["먼저 미소 지으며 인사하기","동료가 도와준 일에 감사 문자 보내기","업무 자료 찾는 것을 한 번 도와주기","힘든 날을 보내는 동료에게 응원 전하기","다른 부서 동료에게 수고했다는 말 건네기","주변의 작은 친절을 알아봐 주기"];
+let index=0;$("draw").onclick=()=>{$("goodDeed").textContent=ideas[index%ideas.length];index++};$("draw").click();boot();
+</script></body></html>
