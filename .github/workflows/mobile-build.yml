@@ -41,7 +41,14 @@ jobs:
       - name: Build Android arm64 debug test APK
         run: |
           cd apps/mobile
-          flutter build apk --debug --target-platform android-arm64
+          for attempt in 1 2 3; do
+            if flutter build apk --debug --target-platform android-arm64; then
+              exit 0
+            fi
+            echo "Gradle/Maven build attempt ${attempt} failed; retrying transient dependency resolution"
+            sleep 15
+          done
+          exit 1
       - uses: actions/upload-artifact@v4
         with:
           name: ASEA-IEUM-Android-arm64-DEBUG-TEST-ONLY
