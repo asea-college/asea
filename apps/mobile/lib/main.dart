@@ -8,7 +8,7 @@ const key='sb_publishable_DxtNEPtU2KktlcRQnQx9jA_szCPFzMj';
 Future<void> main() async {
  WidgetsFlutterBinding.ensureInitialized();
  await Supabase.initialize(url:url, anonKey:key);
- runApp(MaterialApp(title:'아세아 이음',debugShowCheckedModeBanner:false,theme:ThemeData(colorScheme:ColorScheme.fromSeed(seedColor:const Color(0xff184da4))),home:const SignIn()));
+ runApp(MaterialApp(title:'아세아 이음',debugShowCheckedModeBanner:false,theme:ThemeData(fontFamily:'Pretendard',colorScheme:ColorScheme.fromSeed(seedColor:const Color(0xff184da4)),textTheme:const TextTheme(headlineMedium:TextStyle(fontFamily:'Pretendard',fontWeight:FontWeight.w700,letterSpacing:-0.6),titleLarge:TextStyle(fontFamily:'Pretendard',fontWeight:FontWeight.w700,letterSpacing:-0.4),bodyLarge:TextStyle(fontFamily:'Pretendard',fontWeight:FontWeight.w400,height:1.45),bodyMedium:TextStyle(fontFamily:'Pretendard',fontWeight:FontWeight.w400,height:1.4)),appBarTheme:const AppBarTheme(titleTextStyle:TextStyle(fontFamily:'Pretendard',fontSize:20,fontWeight:FontWeight.w700,color:Color(0xff193b74)))),home:const SignIn()));
 }
 class SignIn extends StatefulWidget {const SignIn({super.key});@override State<SignIn> createState()=>_SignInState();}
 class _SignInState extends State<SignIn>{
