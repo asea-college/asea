@@ -81,6 +81,23 @@ class _RegisterState extends State<Register>{
  ]))));
 }
 
+class DirectContactPage extends StatefulWidget {const DirectContactPage({super.key});@override State<DirectContactPage> createState()=>_DirectContactPageState();}
+class _DirectContactPageState extends State<DirectContactPage>{
+ List<Map<String,dynamic>> contacts=[];String query='',error='';
+ @override void initState(){super.initState();load();}
+ Future<void> load()async{try{final d=await Supabase.instance.client.rpc('notice_staff_directory');if(mounted)setState(()=>contacts=List<Map<String,dynamic>>.from(d as List));}catch(e){if(mounted)setState(()=>error=e.toString());}}
+ Future<void> open(Map<String,dynamic> p)async{
+ try{final id=await Supabase.instance.client.rpc('notice_open_direct',params:{'p_other':p['id']});
+ final r=await Supabase.instance.client.from('notice_rooms').select('id,title,kind').eq('id',id).single();
+ if(mounted)Navigator.push(context,MaterialPageRoute(builder:(_)=>Thread(room:Map<String,dynamic>.from(r))));
+ }catch(e){if(mounted)setState(()=>error=e.toString());}
+ }
+ @override Widget build(BuildContext context)=>Scaffold(appBar:AppBar(title:const Text('동료에게 메시지 보내기')),
+ body:Column(children:[Padding(padding:const EdgeInsets.all(12),child:TextField(onChanged:(v)=>setState(()=>query=v.trim()),decoration:const InputDecoration(prefixIcon:Icon(Icons.search),hintText:'직원 이름 검색'))),
+ if(error.isNotEmpty)Text(error,style:const TextStyle(color:Colors.red)),
+ Expanded(child:ListView(children:contacts.where((p)=>p['id']!=Supabase.instance.client.auth.currentUser?.id&&p['full_name'].toString().contains(query)).map((p)=>ListTile(
+ leading:const CircleAvatar(child:Icon(Icons.person)),title:Text(p['full_name'].toString()),trailing:const Icon(Icons.chat_bubble_outline),onTap:()=>open(p))).toList()))]));
+}
 class Rooms extends StatefulWidget {final bool isAdmin;const Rooms({super.key,this.isAdmin=false});@override State<Rooms> createState()=>_RoomsState();}
 class _RoomsState extends State<Rooms>{
  List<Map<String,dynamic>> rooms=[];String status='';bool loading=true;
@@ -92,6 +109,7 @@ class _RoomsState extends State<Rooms>{
  }
  @override Widget build(BuildContext context)=>Scaffold(appBar:AppBar(title:const Text('아세아 이음 · 메시지함'),actions:[IconButton(tooltip:'오늘의 작은 이음',onPressed:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>const KindnessPage())),icon:const Icon(Icons.favorite_outline)),if(widget.isAdmin)TextButton.icon(onPressed:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>const AdminConsole())),icon:const Icon(Icons.admin_panel_settings),label:const Text('관리자')),IconButton(onPressed:refresh,icon:const Icon(Icons.refresh)),IconButton(onPressed:()async{await Supabase.instance.client.auth.signOut();if(context.mounted)Navigator.pushReplacement(context,MaterialPageRoute(builder:(_)=>const SignIn()));},icon:const Icon(Icons.logout))]),
  body:loading?const Center(child:CircularProgressIndicator()):ListView(children:[
+ ListTile(leading:const Icon(Icons.person_add_alt_1),title:const Text('동료 검색 · 개인 메시지 시작'),trailing:const Icon(Icons.chevron_right),onTap:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>const DirectContactPage()))),
  if(status.isNotEmpty)Padding(padding:const EdgeInsets.all(12),child:Text(status)),
  if(rooms.isEmpty)const Padding(padding:EdgeInsets.all(30),child:Text('참여할 대화방이 없습니다.')),
  ...rooms.map((r)=>ListTile(
@@ -100,7 +118,7 @@ class _RoomsState extends State<Rooms>{
  trailing:const Icon(Icons.chevron_right),
  onTap:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>Thread(room:r)))))
  ]),
- bottomNavigationBar:NavigationBar(selectedIndex:1,destinations:[
+ bottomNavigationBar:NavigationBar(selectedIndex:1,onDestinationSelected:(index){if(index==1)return;if(index==0||index==2){Navigator.push(context,MaterialPageRoute(builder:(_)=>const Rooms()));}else{Navigator.push(context,MaterialPageRoute(builder:(_)=>const KindnessPage()));}},destinations:[
  NavigationDestination(icon:Icon(Icons.home_outlined),label:'홈'),
  NavigationDestination(icon:Icon(Icons.chat_bubble_outline),label:'메시지'),
  NavigationDestination(icon:Icon(Icons.campaign_outlined),label:'공지'),
