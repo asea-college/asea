@@ -59,7 +59,6 @@ class _RoomsState extends State<Rooms>{
  NavigationDestination(icon:Icon(Icons.campaign_outlined),label:'공지'),
  NavigationDestination(icon:Icon(Icons.settings_outlined),label:'설정')]));
 }
-}
 class Thread extends StatefulWidget {
  final Map<String,dynamic> room;const Thread({super.key,required this.room});
  @override State<Thread> createState()=>_ThreadState();
@@ -101,6 +100,7 @@ class _ThreadState extends State<Thread>{
  Expanded(child:RefreshIndicator(onRefresh:refresh,child:ListView(children:items.isEmpty?[const Padding(padding:EdgeInsets.all(40),child:Text('메시지 없음'))]:items))),
  SafeArea(child:Padding(padding:const EdgeInsets.all(10),child:Row(children:[Expanded(child:TextField(controller:input,decoration:const InputDecoration(hintText:'메시지 입력',border:OutlineInputBorder()))),IconButton(onPressed:send,icon:const Icon(Icons.send))])))
  ]));
+}
 }
 String makeUuid(){
  final r=Random.secure();final b=List<int>.generate(16,(_)=>r.nextInt(256));b[6]=(b[6]&15)|64;b[8]=(b[8]&63)|128;
