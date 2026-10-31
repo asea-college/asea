@@ -59,7 +59,7 @@ async function listPending(){
   const item=document.createElement("div");item.className="item";
   const title=document.createElement("strong");title.textContent=p.full_name+" · "+(p.requested_department||"부서 미지정");
   const btn=document.createElement("button");btn.className="sub";btn.textContent="승인";
-  btn.onclick=async()=>{btn.disabled=true;const {error}=await sb.rpc("notice_approve_member",{p_user:p.id,p_role:"staff"});if(error){$("adminError").textContent=error.message;btn.disabled=false}else await listPending()};
+  btn.onclick=async()=>{btn.disabled=true;let deptId=null;let failure=null;const requested=(p.requested_department||"").trim();if(requested){const result=await sb.rpc("notice_resolve_department",{p_name:requested});failure=result.error;deptId=result.data}if(!failure){const result=await sb.rpc("notice_approve_member",{p_user:p.id,p_department:deptId,p_role:"staff"});failure=result.error}if(failure){$("adminError").textContent=failure.message;btn.disabled=false}else await listPending()};
   item.append(title,btn);dest.append(item)
  }
 }
