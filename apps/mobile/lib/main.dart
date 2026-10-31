@@ -26,6 +26,17 @@ class _SignInState extends State<SignIn>{
   catch(e){if(mounted)setState(()=>error='로그인 처리에 실패했습니다. 다시 시도하십시오.');}
   finally{if(mounted)setState(()=>busy=false);}
  }
+ Future<void> requestReset()async{
+  final address=email.text.trim();
+  if(!address.contains('@')){if(mounted)setState(()=>error='비밀번호를 재설정할 이메일 주소를 입력하십시오.');return;}
+  setState((){busy=true;error='';});
+  try{
+   await Supabase.instance.client.auth.resetPasswordForEmail(address);
+   if(mounted)setState(()=>error='비밀번호 재설정 이메일을 요청했습니다. 메일함과 스팸함을 확인하십시오. 연결된 재설정 페이지의 구성에 따라 추가 조치가 필요할 수 있습니다.');
+  }on AuthException catch(e){if(mounted)setState(()=>error='재설정 요청 실패: '+e.message);}
+  catch(e){if(mounted)setState(()=>error='이메일 재설정 요청에 실패했습니다.');}
+  finally{if(mounted)setState(()=>busy=false);}
+ }
  @override Widget build(BuildContext context)=>Scaffold(backgroundColor:const Color(0xfff1f5fb),body:Center(child:SingleChildScrollView(child:ConstrainedBox(constraints:const BoxConstraints(maxWidth:400),child:Card(child:Padding(padding:const EdgeInsets.all(24),child:Column(mainAxisSize:MainAxisSize.min,children:[
  const Icon(Icons.flight_takeoff,size:46,color:Color(0xff184da4)),const Text('아세아 이음',style:TextStyle(fontSize:32,fontWeight:FontWeight.bold,color:Color(0xff184da4))),
  const Text('함께 이어가는 소통 · ASEA IEUM'),const SizedBox(height:30),
@@ -33,6 +44,7 @@ class _SignInState extends State<SignIn>{
  const SizedBox(height:12),TextField(controller:pw,obscureText:true,decoration:const InputDecoration(labelText:'비밀번호',border:OutlineInputBorder())),
  const SizedBox(height:16),FilledButton(onPressed:busy?null:login,child:Text(busy?'인증 중':'로그인')),
  TextButton(onPressed:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>const Register())),child:const Text('처음 사용하시나요? 교직원 가입')),
+ TextButton(onPressed:busy?null:requestReset,child:const Text('비밀번호 재설정 이메일 요청')),
  if(error.isNotEmpty)Text(error,style:const TextStyle(color:Colors.red)),
  const SizedBox(height:14),const Text('아이디 전용 가입은 인증 API 구현 전까지 이용할 수 없습니다.',style:TextStyle(fontSize:11,color:Colors.grey))
  ])))))));
