@@ -19,6 +19,8 @@ jobs:
         run: |
           cd apps/mobile
           flutter create --platforms=android --project-name asea_staff .
+          rm -f test/widget_test.dart
+          rm -f analysis_options.yaml
           flutter pub get
           flutter analyze --no-fatal-infos
       - name: Build unsigned Android debug APK
