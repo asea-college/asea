@@ -1,0 +1,1 @@
+alter function public.notice_is_admin() set search_path='';
