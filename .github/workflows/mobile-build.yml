@@ -25,13 +25,13 @@ jobs:
           python3 fetch_pretendard.py
           flutter pub get
           flutter analyze --no-fatal-infos
-      - name: Build unsigned Android debug APK
+      - name: Build Android arm64 debug test APK
         run: |
           cd apps/mobile
-          flutter build apk --debug
+          flutter build apk --debug --target-platform android-arm64
       - uses: actions/upload-artifact@v4
         with:
-          name: ASEA-Android-DEBUG-NOT-PRODUCTION
+          name: ASEA-IEUM-Android-arm64-DEBUG-TEST-ONLY
           path: apps/mobile/build/app/outputs/flutter-apk/app-debug.apk
           if-no-files-found: error
 # macOS runner and App Store signing may incur costs; run only after budget/Apple account review.
