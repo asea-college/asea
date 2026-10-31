@@ -97,15 +97,15 @@ class AdminConsole extends StatefulWidget {const AdminConsole({super.key});@over
 class _AdminConsoleState extends State<AdminConsole>{
  final sb=Supabase.instance.client;
  final channel=TextEditingController(),department=TextEditingController();
- List<Map<String,dynamic>> pending=[],departments=[];
+ List<Map<String,dynamic>> pending=[],departments=[],staff=[];
  String result='';bool loading=false;
  @override void initState(){super.initState();reload();}
  @override void dispose(){channel.dispose();department.dispose();super.dispose();}
  Future<void> reload()async{
   setState(()=>loading=true);
   try{
-   final resultSet=await Future.wait([sb.rpc('notice_pending_staff'),sb.from('notice_departments').select('id,name').eq('active',true).order('name')]);
-   if(mounted)setState((){pending=List<Map<String,dynamic>>.from(resultSet[0] as List);departments=List<Map<String,dynamic>>.from(resultSet[1] as List);result='';});
+   final resultSet=await Future.wait([sb.rpc('notice_pending_staff'),sb.from('notice_departments').select('id,name').eq('active',true).order('name'),sb.rpc('notice_staff_directory')]);
+   if(mounted)setState((){pending=List<Map<String,dynamic>>.from(resultSet[0] as List);departments=List<Map<String,dynamic>>.from(resultSet[1] as List);staff=List<Map<String,dynamic>>.from(resultSet[2] as List);result='';});
   }catch(e){if(mounted)setState(()=>result=e.toString());}
   finally{if(mounted)setState(()=>loading=false);}
  }
@@ -123,6 +123,14 @@ class _AdminConsoleState extends State<AdminConsole>{
   try{await sb.rpc('notice_resolve_department',params:{'p_name':department.text.trim()});department.clear();await reload();}
   catch(e){if(mounted)setState(()=>result=e.toString());}
  }
+ Future<void> makeSuper(Map<String,dynamic> person)async{
+ final choice=await showDialog<bool>(context:context,builder:(ctx)=>AlertDialog(title:const Text('최고 관리자 지정'),content:Text(person['full_name'].toString()+' 계정에 전체 권한을 부여하시겠습니까?'),actions:[
+ TextButton(onPressed:()=>Navigator.pop(ctx,false),child:const Text('취소')),
+ FilledButton(onPressed:()=>Navigator.pop(ctx,true),child:const Text('권한 부여'))]));
+ if(choice!=true)return;
+ try{await sb.rpc('notice_grant_super',params:{'p_user':person['id']});if(mounted)setState(()=>result='최고 관리자 권한을 부여했습니다.');}
+ catch(e){if(mounted)setState(()=>result=e.toString());}
+ }
  Future<void> addChannel()async{
   if(channel.text.trim().isEmpty)return;
   try{await sb.rpc('notice_create_channel',params:{'p_kind':'all','p_title':channel.text.trim()});channel.clear();if(mounted)setState(()=>result='전체 메시지 채널을 만들었습니다.');}
@@ -135,6 +143,8 @@ class _AdminConsoleState extends State<AdminConsole>{
  if(loading)const LinearProgressIndicator(),
  if(pending.isEmpty)const ListTile(title:Text('승인 대기 직원 없음')),
  ...pending.map((p)=>Card(child:ListTile(title:Text(p['full_name']?.toString()??'이름 없음'),subtitle:Text('신청 부서: '+(p['requested_department']?.toString()??'미지정')),trailing:FilledButton(onPressed:()=>approve(p),child:const Text('승인'))))),
+ const Divider(),const ListTile(title:Text('최고 관리자 권한 부여'),subtitle:Text('승인된 직원만 지정 가능합니다. 권한 부여 전 계정을 확인하십시오.')),
+ ...staff.where((p)=>p['id']!=sb.auth.currentUser?.id).map((p)=>ListTile(title:Text(p['full_name'].toString()),trailing:TextButton(onPressed:()=>makeSuper(p),child:const Text('관리자 지정')))),
  const Divider(),const ListTile(title:Text('공식 부서 목록'),subtitle:Text('가입자는 이 목록에서만 부서를 선택합니다.')),
  ...departments.map((d)=>ListTile(leading:const Icon(Icons.account_tree_outlined),title:Text(d['name'].toString()))),
  TextField(controller:department,decoration:const InputDecoration(labelText:'부서 추가',border:OutlineInputBorder())),
