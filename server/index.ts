@@ -23,6 +23,7 @@ Deno.serve(async req=>{if(req.method==='OPTIONS')return new Response(null,{statu
   const u=await request('/auth/v1/user','GET',undefined,s.access_token);if(u.app_metadata?.tt_admin!==true)throw Error('관리자 권한이 없습니다.');return json({access_token:s.access_token});
  }
  if(p.action==='save')return json(await db('rpc/tt_save','POST',{base_revision:p.revision,next_doc:p.document,reason:p.reason||'자료 변경'}));
+ if(p.action==='import-haksa'){await admin(req);return json(await db('rpc/tt_import_haksa','POST',{base_revision:p.revision,next_doc:p.document,reason:p.reason||'학점은행제 원본 등록 · 기존 충돌 보존'}));}
  if(p.action==='restore'){
   const a=(await db('tt_audit?id=eq.'+encodeURIComponent(String(Number(p.id)))+'&select=*'))[0];if(!a)throw Error('이력을 찾을 수 없습니다.');
   const state=(await db('tt_state?select=revision,document'))[0];if(JSON.stringify(state.document)!==JSON.stringify(a.after_doc))throw Error('이 변경 이후 다른 수정이 있습니다. 최신 변경부터 복원하거나 개별 수업을 수정해 주세요.');
@@ -45,3 +46,4 @@ Deno.serve(async req=>{if(req.method==='OPTIONS')return new Response(null,{statu
  }
  return json({error:'알 수 없는 작업'},400);
 }catch(e){const message=e instanceof Error?e.message:'요청 실패';return json({error:message},/다른 사람이/.test(message)?409:400);}});
+
