@@ -1,0 +1,7 @@
+window.TimetableWeek={
+ minutes(s){const [h,m]=s.split(':').map(Number);return h*60+m;},
+ build(rows,anchor){const d=new Date(anchor+'T00:00:00Z');d.setUTCDate(d.getUTCDate()-d.getUTCDay());const days=Array.from({length:7},(_,i)=>{const t=new Date(d);t.setUTCDate(t.getUTCDate()+i);return t.toISOString().slice(0,10);});const shown=rows.filter(e=>days.includes(e.date));const from=Math.min(540,...shown.map(e=>this.minutes(e.start))),to=Math.max(1080,...shown.map(e=>this.minutes(e.end)));const min=Math.floor(from/60)*60,max=Math.ceil(to/60)*60;
+ const columns=days.map(day=>{const events=shown.filter(e=>e.date===day).sort((a,b)=>a.start.localeCompare(b.start)||a.end.localeCompare(b.end));let cluster=[],end=-1;const out=[];const flush=()=>{const lanes=[];for(const e of cluster){const a=this.minutes(e.start),b=this.minutes(e.end);let lane=lanes.findIndex(x=>x<=a);if(lane<0)lane=lanes.length;lanes[lane]=b;out.push({lesson:e,lane,top:(a-min)/(max-min)*100,height:(b-a)/(max-min)*100});}for(const e of out.slice(out.length-cluster.length))e.lanes=lanes.length;cluster=[];};for(const e of events){const a=this.minutes(e.start),b=this.minutes(e.end);if(cluster.length&&a>=end)flush();if(!cluster.length)end=b;cluster.push(e);end=Math.max(end,b);}if(cluster.length)flush();return {day,events:out};});
+ return {days,columns,min,max,count:shown.length,ticks:Array.from({length:max/60-min/60+1},(_,i)=>({label:String(min/60+i).padStart(2,'0')+':00',top:i*60/(max-min)*100}))};
+ }
+};
