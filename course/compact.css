@@ -5,3 +5,6 @@
 button:not(.tt-event):not(.month-day-button):not(#nav-backdrop),select,input:not([type=checkbox]):not([type=radio]):not([type=file]){height:var(--control-height)}#nav button{height:var(--nav-height)}#header-more #version{min-height:0;align-self:center}
 @media print{header,#quick-search,.source-notice{display:none!important}}
 
+/* Quiet calendar cards and cross-course drill-down links. */
+.tt-event{border:0!important;border-left:0!important;border-bottom:1px solid #dbe3ec!important;border-radius:0!important;background:transparent!important;box-shadow:none!important;margin:5px 0;padding:7px 3px!important}
+.tt-event:hover{background:#edf2f7!important}.tt-table .matrix-link,.tt-lesson .matrix-link{display:inline;height:auto!important;min-height:0!important;padding:0!important;border:0!important;border-radius:0;background:transparent!important;color:inherit;font:inherit;text-align:left;white-space:normal;line-height:inherit;cursor:pointer}.matrix-link:hover{text-decoration:underline}.matrix-link:focus-visible{outline:2px solid #315e8b;outline-offset:2px}.today-tools{gap:8px;margin-bottom:10px}.today-tools input{width:240px}.tt-lesson>strong{display:block;margin:3px 0}.tt-tools select{max-width:250px}@media(max-width:760px){.today-tools input{width:180px}.tt-tools select{max-width:100%}.tt-lesson .matrix-link{overflow-wrap:anywhere}}
