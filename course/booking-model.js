@@ -1,0 +1,13 @@
+window.BookingModel={
+ iso(value){const s=String(value||'').replace(/[^0-9]/g,'');if(s.length!==8)return '';const v=s.slice(0,4)+'-'+s.slice(4,6)+'-'+s.slice(6);const d=new Date(v+'T00:00:00Z');return Number.isNaN(+d)||d.toISOString().slice(0,10)!==v?'':v;},
+ addDays(day,n){const d=new Date(day+'T00:00:00Z');d.setUTCDate(d.getUTCDate()+n);return d.toISOString().slice(0,10);},
+ dates(first,last,weekly=false,weekdays=[]){if(!this.iso(first)||!this.iso(last)||first>last)throw Error('사용일정의 시작일·종료일을 확인하세요.');if((Date.parse(last)-Date.parse(first))/86400000>730)throw Error('날짜 범위는 2년 이내로 선택하세요.');if(weekly&&!weekdays.length)throw Error('반복할 요일을 선택하세요.');const out=[];for(let day=first;day<=last;day=this.addDays(day,1)){if(!weekly||weekdays.includes(new Date(day+'T00:00Z').getUTCDay()))out.push(day);if(out.length>366)throw Error('한 번에 최대 366개 날짜까지 예약할 수 있습니다.');}if(!out.length)throw Error('선택한 범위에 해당 요일이 없습니다.');return out;},
+ nextHour(time){if(!/^([01]\d|2[0-3]):[0-5]\d$/.test(time))return '';const [h,m]=time.split(':').map(Number);return String((h+1)%24).padStart(2,'0')+':'+String(m).padStart(2,'0');},
+ interval(day,start,end){if(!this.iso(day)||!/^([01]\d|2[0-3]):[0-5]\d$/.test(start)||!/^([01]\d|2[0-3]):[0-5]\d$/.test(end))throw Error('사용 날짜와 HH:MM 형식의 시간을 입력하세요.');return {starts_at:day+'T'+start+':00',ends_at:(end<=start?this.addDays(day,1):day)+'T'+end+':00'};},
+ roomCompare(a,b){const key=r=>{const s=r?.name||'',m=s.match(/^B(\d+)/i);return m?-Number(m[1]):Number(s.match(/\d+/)?.[0]||1e6);};return key(a)-key(b)||String(a?.name||'').localeCompare(b?.name||'','ko',{numeric:true})||String(a?.building||'').localeCompare(b?.building||'','ko');},
+ sortRooms(ids,rooms){return [...ids].sort((a,b)=>this.roomCompare(rooms.find(r=>r.id===a),rooms.find(r=>r.id===b)));},
+ compare(a,b,rooms){const get=id=>rooms.find(r=>r.id===id);return this.roomCompare(get(a.roomIds[0]),get(b.roomIds[0]))||a.start.localeCompare(b.start)||a.id.localeCompare(b.id);},
+ roomParts(ids,rooms){return ids.map((id,i)=>{const name=rooms.find(r=>r.id===id)?.name||id;return name.replace(/호$/,'')+(i<ids.length-1?'/':/\d/.test(name)?'호':'');});},
+ overlaps(a,b){return a.starts_at<b.ends_at&&a.ends_at>b.starts_at&&a.rooms.some(r=>b.rooms.includes(r));},
+ monthDays(month){const d=new Date(month+'-01T00:00Z');if(Number.isNaN(+d))throw Error('월을 선택하세요.');const last=new Date(Date.UTC(d.getUTCFullYear(),d.getUTCMonth()+1,0));const size=Math.ceil((last.getUTCDate()+d.getUTCDay())/7)*7;d.setUTCDate(d.getUTCDate()-d.getUTCDay());return Array.from({length:size},(_,i)=>this.addDays(d.toISOString().slice(0,10),i));}
+};
