@@ -57,7 +57,7 @@ declare v_common uuid; v_role text; v_run uuid:=gen_random_uuid(); v_no integer;
 begin
  if p_period !~ '^[0-9]{4}-[0-9]{2}$' then raise exception '기간은 YYYY-MM 형식이어야 합니다.'; end if;
  select role into v_role from public.budget_profiles where user_id=auth.uid() and is_active;
- if v_role not in ('budget_admin','executive') then raise exception '예산관리 담당자 또는 임원만 실행할 수 있습니다.'; end if;
+ if coalesce(v_role,'') not in ('budget_admin','executive') then raise exception '예산관리 담당자 또는 임원만 실행할 수 있습니다.'; end if;
  select id into v_common from public.budget_departments where code='0' and active;
  if v_common is null then raise exception '공통(0) 부서를 등록해 주세요.'; end if;
  if exists(select 1 from public.budget_pl_cost_entries c where c.period=p_period and c.scope='shared' and
