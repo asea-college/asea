@@ -15,7 +15,7 @@ Live page: https://asea-college.github.io/asea/budget/
 2. Sign in after any email verification prompt.
 3. On the pending-access screen, enter the one-time administrator activation code provided to the project owner.
 4. In **사용자·부서 관리**, assign department and role to each registered staff account.
-5. Add the 2027 budget accounts and amounts from the approved source sheets. Department names are preloaded; the budget line amounts have not been imported.
+5. Open **예산 항목** and choose **엑셀 붙여넣기** to load source-sheet rows. Paste tab-separated columns in this order: account code, account name, category, amount in won, basis. Choose fiscal year and department before applying. Matching department/year/account-code rows are updated.
 
 Roles include staff requester, department budget manager, department head, budget administrator and executive reviewer.
 
