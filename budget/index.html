@@ -88,13 +88,13 @@
       const form=$('#bulkAllocForm');if(!form.reportValidity())return;
       const fd=new FormData(form),year=Number(fd.get('fiscal_year')),department_id=fd.get('department_id');
       const lines=String(fd.get('rows')||'').split(/\r?\n/).map(x=>x.trim()).filter(Boolean);
-      const parsed=lines.map((line,i)=>({line,i,cols:line.includes('\t')?line.split('\t'):line.split(',')}));
+      const parsed=lines.map((line,i)=>({line,i,cols:line.split('\t')}));
       const data=[];
       for(const row of parsed){
         const c=row.cols.map(x=>x.trim());
         if(row.i===0&&/계정|항목|예산|분류/.test(c.join(' ')))continue;
         const account_code=c[0]||'',account_name=c[1]||'',category=c[2]||'',amount=Number(String(c[3]||'').replace(/[^0-9.-]/g,''));
-        if(!account_code||!account_name||!Number.isSafeInteger(amount)||amount<0)return toast((row.i+1)+'행: 계정코드·항목명·원 단위 예산액을 확인해 주세요.');
+        if(!account_code||!account_name||!String(c[3]||'').trim()||!Number.isSafeInteger(amount)||amount<0)return toast((row.i+1)+'행: 계정코드·항목명·원 단위 예산액을 확인해 주세요.');
         data.push({fiscal_year:year,department_id,account_code,account_name,category,allocated_amount:amount,basis:c.slice(4).join(' ').trim()});
       }
       if(!data.length)return toast('등록할 예산 항목이 없습니다.');
