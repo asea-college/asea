@@ -212,6 +212,7 @@
   }
 
   function render() {
+    if($("enterBehavior"))$("enterBehavior").value=documentOptions.enterBehavior || "paragraph";
     if ($("fontFamily")) $("fontFamily").value = baseStyle.fontFamily;
 
     materializeText();
@@ -706,8 +707,22 @@
   for (const id of ids)
     $(id).addEventListener("change", () => {
       save();
+      if(["lineHeight","paragraphGap","fontSize"].includes(id)) {
+        const value=+$(id).value;
+        baseStyle[id]=value;
+        for(const b of blocks){
+          if(b.kind==="image")continue;
+          if(b.kind==="table"){b.tableOptions ||= {};if(id!=="paragraphGap")b.tableOptions[id]=value;continue;}
+          b.style ||= {};b.style[id]=value;
+          if(id==="lineHeight")delete b.style.lineHeightPt;
+        }
+      }
       render();
     });
+  if($("enterBehavior"))$("enterBehavior").addEventListener("change",()=>{
+    save();documentOptions.enterBehavior=$("enterBehavior").value;render();
+    status(documentOptions.enterBehavior==="tight"?"Enter：새 문단을 바로 다음 줄에 연결":"Enter：문단 간격 적용 · Shift+Enter：같은 문단 줄바꿈");
+  });
   for (const id of ["report", "official"])
     $(id).onclick = () => {
       save();
@@ -5503,6 +5518,10 @@
       typingAt = { ...next };
       editSaved = false;
     }
+    document.addEventListener("editor-insert-break",event=>{
+      if(window.EditorInput?.composing)return;
+      enter(event.detail==="soft");
+    });
     function enter(soft = false) {
       checkpoint();
       const p = removeSelection(),
@@ -5553,6 +5572,9 @@
         .map((i) => ({ ...i, offset: i.offset - at }));
       d.b.inlineImages = (d.b.inlineImages || []).filter((i) => i.offset < at);
       d.b.text = d.text.slice(0, at);
+      d.b.style ||= {};
+      d.b.style.paragraphGap = documentOptions.enterBehavior==="tight" ? 0 : baseStyle.paragraphGap;
+      tail.style.paragraphGap=baseStyle.paragraphGap;
       d.b.gapAfterHidden = true;
       delete tail.hierarchyPrefix;
       blocks.splice(blocks.indexOf(d.b) + 1, 0, tail);

@@ -35,12 +35,24 @@ document.addEventListener('DOMContentLoaded',()=>{
  function showWelcome(){closeTour();if(!welcome.open)welcome.showModal();}
  function dismissWelcome(){welcome.close();markSeen();}
  $('showHelp').onclick=showWelcome;
+ for(const [id,kind] of [['insertSoftBreak','soft'],['insertParagraphBreak','paragraph']]) {
+   $(id).addEventListener('mousedown',event=>event.preventDefault());
+   $(id).onclick=()=>document.dispatchEvent(new CustomEvent('editor-insert-break',{detail:kind}));
+ }
+ $('editor').addEventListener('click',event=>{
+   const link=event.target.closest('a[href]');
+   if(!link || !(event.ctrlKey||event.metaKey))return;
+   const url=new URL(link.href,location.href);
+   if(!/^https?:$/.test(url.protocol))return;
+   event.preventDefault();window.open(url.href,'_blank','noopener,noreferrer');
+ },true);
+
  $('dismissWelcome').onclick=$('laterGuide').onclick=dismissWelcome;
  welcome.addEventListener('cancel',markSeen);
  const common=[
  ['#source','자료 복사 후 붙여넣기','ChatGPT·Claude 등 AI나 웹페이지에서 표가 포함된 자료를 복사합니다. 왼쪽 ‘원본 붙여넣기’ 칸을 클릭하고 Ctrl+V로 붙여넣습니다. 문장과 표를 함께 복사해도 됩니다.'],
  ['#convert','변환하고 미리보기 확인','붙여넣으면 변환된 문서가 표시됩니다. 원문을 직접 입력하거나 수정한 경우 ‘변환’을 누릅니다. 번호와 표가 오른쪽에 들어왔는지 확인합니다. 연습하려면 ‘문서 예시’ 아이콘을 이용하세요.'],
- ['#editor','본문과 표를 직접 편집','오른쪽 본문이나 표의 내용을 클릭해 수정합니다. 드래그로 문단과 표를 가로질러 선택할 수 있습니다. 번호와 들여쓰기는 실제 스페이스 문자로 유지됩니다.'],
+ ['#editor','본문과 표를 직접 편집','Enter는 새 문단을 만들고 설정한 문단 간격을 적용합니다. Shift+Enter는 같은 문단 안에서 줄바꿈하며 줄 간격만 적용합니다. ‘바로 다음 줄’을 선택하면 Enter의 추가 간격은 0입니다. 학사정보 기본 배경은 게시판 배경을 따릅니다. 웹 링크는 새 창·탭으로 열립니다. 오른쪽 본문이나 표의 내용을 클릭해 수정합니다. 드래그로 문단과 표를 가로질러 선택할 수 있습니다. 번호와 들여쓰기는 실제 스페이스 문자로 유지됩니다.'],
  ['.toolbar','서체와 표 서식 조정','서체 칸에 이름을 입력해 찾고 선택합니다. ‘내 PC 서체 불러오기’는 권한 승인 후 설치된 글꼴 목록을 보여줍니다. 글자 크기·표 폭·제목 색을 조정할 수 있습니다. 도구 아이콘 위에 마우스를 올리면 이름이 나옵니다.']
  ];
  function steps(){return [...common,tourMode==='academic'?['#copyCK','학사정보 게시판 형식 복사','녹색 ‘학사정보 형식 복사’를 누릅니다. 학사정보 시스템의 게시판 글쓰기 화면으로 이동해 일반 본문 편집 영역을 클릭한 뒤 Ctrl+V로 붙여넣습니다. HTML 소스 입력창에는 붙여넣지 않습니다.']:['#copy','기안문 형식 복사','파란색 ‘기안문 형식 복사’를 누릅니다. 그룹웨어 기안문 작성 화면의 일반 본문 편집 영역을 클릭하고 Ctrl+V로 붙여넣습니다. HTML 소스 입력창에는 붙여넣지 않습니다.'],['#webSave','최종 확인과 초안 저장','붙여넣은 문서에서 번호·표·서체를 확인합니다. ‘초안 저장’은 현재 브라우저에 저장하며, 다른 PC로 옮길 때는 ‘백업 다운로드’를 사용합니다. 상단 ‘사용법’에서 안내를 다시 볼 수 있습니다.']];}

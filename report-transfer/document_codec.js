@@ -318,6 +318,8 @@
   }
   function ckeditorHTML(html) {
     const doc = new DOMParser().parseFromString(html, "text/html");
+    const paper=doc.querySelector('[data-document="1"]');
+    if(paper){paper.style.removeProperty("background");paper.style.removeProperty("background-color");paper.removeAttribute("bgcolor");}
     for (const table of doc.querySelectorAll("table")) {
       const a =
         table.getAttribute("data-table-align") ||
@@ -385,7 +387,7 @@
       line.style.setProperty("padding","0","important");
       line.style.setProperty("text-align",p.style.textAlign || p.getAttribute("align") || "left","important");
       line.setAttribute("data-academic-paragraph","1");
-      for(const property of ["font-family","font-size","line-height","color","font-weight","letter-spacing"]) {
+      for(const property of ["font-family","font-size","line-height","color","font-weight","letter-spacing","background-color"]) {
         if(p.style.getPropertyValue(property)) line.style.setProperty(property,p.style.getPropertyValue(property),"important");
       }
       line.style.whiteSpace="normal";
@@ -407,11 +409,16 @@
         if(n.nodeValue.length)atStart=false;
       }
       const group=doc.createDocumentFragment();
-      line.append(doc.createElement("br"));
+      if(line.textContent.length || !line.querySelector("br"))line.append(doc.createElement("br"));
       group.append(line);
-      const gap=doc.createElement("br");gap.setAttribute("data-academic-gap","1");
-      if(parseFloat(p.style.marginBottom)>0) gap.style.lineHeight=p.style.marginBottom;
-      group.append(gap);p.replaceWith(group);
+      const gapPt=Math.max(0,parseFloat(p.style.marginBottom)||0);
+      if(gapPt>0){
+        const gap=doc.createElement("div");gap.setAttribute("data-academic-gap","1");
+        gap.setAttribute("aria-hidden","true");
+        for(const [key,value] of Object.entries({height:gapPt+"pt","line-height":gapPt+"pt","font-size":"0px",margin:"0",padding:"0",background:"transparent"}))gap.style.setProperty(key,value,"important");
+        gap.append(doc.createElement("br"));group.append(gap);
+      }
+      p.replaceWith(group);
     }
     for(const link of doc.querySelectorAll("a[href]")) {
       link.style.setProperty("color","#0563c1","important");
@@ -630,9 +637,7 @@
                 esc(r.url) +
                 '"' +
                 (r.auto ? ' data-auto-link="1"' : "") +
-                (r.newWindow
-                  ? ' target="_blank" rel="noopener noreferrer"'
-                  : "") +
+                ' target="_blank" rel="noopener noreferrer"' +
                 ">" +
                 text +
                 "</a>"

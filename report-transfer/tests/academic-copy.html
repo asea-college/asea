@@ -1,20 +1,26 @@
-<!doctype html><html lang="ko"><meta charset="utf-8"><title>학사정보 저장 표시 호환 검사</title><script src="../table_codec.js"></script><script src="../document_codec.js"></script><h1>학사정보 저장 표시 호환 검사</h1><p>게시판 CSS 초기화와 스타일 필터를 가정한 모의 검사입니다. 실제 학교 서버의 저장 결과 검사는 아닙니다.</p><ul id="results"></ul><h2>모의 게시글</h2><iframe id="board" title="모의 게시글 화면" style="width:850px;height:500px"></iframe><script>
+<!doctype html><html lang="ko"><meta charset="utf-8"><title>학사정보 저장 표시 호환 검사</title><script src="../table_codec.js"></script><script src="../document_codec.js?v=20261124-8"></script><h1>학사정보 저장 표시 호환 검사</h1><p>게시판 CSS 초기화와 스타일 필터를 가정한 모의 검사입니다. 실제 학교 서버의 저장 결과 검사는 아닙니다.</p><ul id="results"></ul><h2>모의 게시글</h2><iframe id="board" title="모의 게시글 화면" style="width:850px;height:500px"></iframe><script>
 const fixtures='<div data-document="1"><p style="font-family:바탕;font-size:14pt;line-height:1.5;text-align:center">안내 제목</p><p style="font-family:바탕;font-size:10pt;line-height:1.5">  가. 첫 번째 내용</p><p style="font-family:바탕;font-size:10pt;line-height:1.5">    1) 세부 내용<br>두 번째 줄</p><p style="font-family:바탕;font-size:10pt;line-height:1.5"><a href="https://example.org">https://example.org</a></p><table width="620" style="width:620px"><colgroup><col width="310"><col width="310"></colgroup><tbody><tr><td style="font-size:10pt;font-family:바탕;border:1px solid #000">항목</td><td style="font-size:10pt;font-family:바탕;border:1px solid #000">내용</td></tr></tbody></table></div>';
 const output=DocumentCodec.ckeditorHTML(fixtures), parsed=new DOMParser().parseFromString(output,'text/html'), checks=[];
 function check(name,pass){checks.push({name,pass});const li=document.createElement('li');li.textContent=(pass?'PASS: ':'FAIL: ')+name;document.getElementById('results').append(li);}
 check('2칸/4칸 들여쓰기 문자가 HTML 공백 축소에 영향받지 않음',parsed.querySelectorAll('[data-academic-paragraph]')[1].textContent.startsWith('\u00a0\u00a0가.')&&parsed.querySelectorAll('[data-academic-paragraph]')[2].textContent.startsWith('\u00a0'.repeat(4)+'1)'));
-check('문단 간격에 명시적 BR 사용',parsed.querySelectorAll('[data-academic-gap]').length===4);
+check('문단 간격 0pt는 추가 빈 줄 없음',parsed.querySelectorAll('[data-academic-gap]').length===0);
 check('서체 크기 14pt 보존',parsed.querySelector('[data-academic-paragraph]').style.fontSize==='14pt');
 check('링크 주소 보존',parsed.querySelector('a').getAttribute('href')==='https://example.org');
+check('기본 본문 배경은 투명',!parsed.querySelector('[data-document]').style.backgroundColor);
+const explicit=DocumentCodec.ckeditorHTML('<div data-document="1" style="background:#fff"><p style="background-color:#ffff00">강조</p></div>');
+check('사용자 지정 배경색 보존',new DOMParser().parseFromString(explicit,'text/html').querySelector('[data-academic-paragraph]')?.style.backgroundColor==='rgb(255, 255, 0)');
+const configured=DocumentCodec.ckeditorHTML('<div data-document="1"><p style="margin-bottom:6pt;line-height:1.8">첫 문단<br>다음 줄</p><p>둘째 문단</p></div>');
+const configuredDoc=new DOMParser().parseFromString(configured,'text/html');
+check('6pt 문단 간격과 1.8 줄 간격 반영',configuredDoc.querySelector('[data-academic-gap]')?.style.height==='6pt'&&configuredDoc.querySelector('[data-academic-paragraph]')?.style.lineHeight==='1.8');
 const frame=document.getElementById('board');
 frame.onload=()=>{const d=frame.contentDocument,w=frame.contentWindow,p=[...d.querySelectorAll('[data-academic-paragraph]')];
-check('게시판 CSS가 있어도 문단 간격 유지',p[1].getBoundingClientRect().top-p[0].getBoundingClientRect().bottom>=10);
+check('게시판 CSS가 있어도 문단 간격 0pt 유지',Math.abs(p[1].getBoundingClientRect().top-p[0].getBoundingClientRect().bottom)<2);
 check('가운데 정렬 보존',w.getComputedStyle(p[0]).textAlign==='center');
 check('서체 크기/줄간격 보존',Math.abs(parseFloat(w.getComputedStyle(p[0]).fontSize)-18.6667)<.2&&parseFloat(w.getComputedStyle(p[0]).lineHeight)>=27);
 check('표 폭 보존',Math.abs(d.querySelector('table').getBoundingClientRect().width-620)<3);
 check('하이퍼링크 표시 보존',w.getComputedStyle(d.querySelector('a')).textDecorationLine.includes('underline'));
 const noCSS=new DOMParser().parseFromString(output,'text/html');noCSS.querySelectorAll('*').forEach(e=>e.removeAttribute('style'));
-check('인라인 CSS가 제거되어도 BR·공백·링크 주소 보존',noCSS.querySelectorAll('br').length>=8&&noCSS.body.textContent.includes('\u00a0\u00a0가.')&&!!noCSS.querySelector('a[href]'));
+check('인라인 CSS가 제거되어도 BR·공백·링크 주소 보존',noCSS.querySelectorAll('br').length>=4&&noCSS.body.textContent.includes('\u00a0\u00a0가.')&&!!noCSS.querySelector('a[href]'));
 document.title=checks.every(c=>c.pass)?'PASS · 학사정보 저장 표시 호환 검사':'FAIL · 학사정보 저장 표시 호환 검사';
 };
 frame.srcdoc='<html lang="ko"><meta charset="utf-8"><style>body{font:12px/1 normal sans-serif;color:#000}p,div{margin:0;padding:0;white-space:normal}a{color:inherit;text-decoration:none}table{border-collapse:collapse}td{font-size:12px}</style><body>'+output+'</body></html>';
