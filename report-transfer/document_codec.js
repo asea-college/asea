@@ -48,8 +48,9 @@
     ...(rows ? { rows } : {}),
   });
   // Hierarchy indentation is stored in text as U+0020, never layout offsets.
-  function spaceHierarchy(b) {
-    if (b.hierarchySpacingNormalized || !b.literal || b.kind === "table" || b.kind === "image") return;
+  function spaceHierarchy(b, hierarchy) {
+    if (!b.literal || b.kind === "table" || b.kind === "image") return;
+    if(b.hierarchySpacingNormalized){const m=String(b.text||"").match(/^[ \u00a0]*(\d+[.)]|[가-하][.)]|[•●▪]|-)[ \u00a0]+/);if(m){const family=m[1].replace(/\d+/g,"n").replace(/[가-하]/g,"ko"),level=Math.min(5,(String(b.text).match(/^[ \u00a0]*/)[0].length/2)|0);hierarchy.splice(level);hierarchy[level]=family;}return;}
     const official = /(?:^|\n)[ \u00a0]*[가-하][.)]\s/.test(b.text || "");
     const edits = [];
     const source = String(b.text || "");
@@ -57,7 +58,11 @@
     let m;
     while ((m = re.exec(source))) {
       const mark = m[2];
-      const level = /^\d+\.$/.test(mark) ? 0 : /^[가-하]\.$/.test(mark) ? 1 : /^\d+\)$/.test(mark) ? 2 : /^[가-하]\)$/.test(mark) ? 3 : /^[•●▪]$/.test(mark) ? (official ? 4 : 2) : (official ? 5 : 3);
+      const family=mark.replace(/\d+/g,"n").replace(/[가-하]/g,"ko");
+      let level=hierarchy.indexOf(family);
+      if(/^\d+\.$/.test(mark))level=0;
+      else if(level<0)level=hierarchy.length;
+      level=Math.min(5,level);hierarchy.splice(level);hierarchy.push(family);
       edits.push({at:m.index, old:m[1].length, value:" ".repeat(level * 2)});
     }
     for (const e of edits.reverse()) {
@@ -74,8 +79,9 @@
   }
   function normalize(blocks, mode = "report", enforce = false) {
     let previous = -1;
+    const hierarchy=[];
     for (const b of blocks) {
-      spaceHierarchy(b);
+      spaceHierarchy(b,hierarchy);
       if (b.kind === "image") continue;
       if (b.kind === "table") {
         b.rows = T.normalize(b.rows.map((r) => r.map((v) => String(v ?? ""))));

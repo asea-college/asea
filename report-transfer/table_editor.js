@@ -6255,6 +6255,24 @@
         cancelAnimationFrame(marginRAF);
       }
     });
+    let naturalCellStart=null;
+    window.addEventListener("mousedown",e=>{
+      naturalCellStart=null;
+      if(e.button!==0||e.ctrlKey||e.metaKey||e.shiftKey||!editor.contains(e.target)||e.target.closest(".column-grip,.image-grip"))return;
+      naturalCellStart=cellAt(e.target);
+    },true);
+    window.addEventListener("mousemove",e=>{
+      if(!naturalCellStart||!(e.buttons&1))return;
+      const end=cellAt(e.target);
+      if(!end||end.id!==naturalCellStart.id||(end.r===naturalCellStart.r&&end.c===naturalCellStart.c&&!cellDragging))return;
+      e.preventDefault();e.stopImmediatePropagation();
+      marginDrag=null;cancelAnimationFrame(marginRAF);
+      cellDragging=true;cellStart=naturalCellStart;
+      cellRect={id:end.id,r1:Math.min(end.r,cellStart.r),r2:Math.max(end.r,cellStart.r),c1:Math.min(end.c,cellStart.c),c2:Math.max(end.c,cellStart.c)};
+      sectionSelection=false;selected=new Set([end.id]);textSelections=[];
+      getSelection()?.removeAllRanges();paintTextSelections();paintCells();selection();
+    },true);
+    window.addEventListener("mouseup",()=>{naturalCellStart=null;},true);
     window.addEventListener(
       "mousedown",
       (e) => {
@@ -6427,7 +6445,11 @@
       "keydown",
       (e) => {
         if(e.key==='Escape'&&document.querySelector('.editor-context-menu,.inline-color-popover')){document.querySelectorAll('.editor-context-menu,.inline-color-popover').forEach(n=>n.remove());stop(e);return;}
-        if (!inside(e) || e.isComposing || composing) return;
+        if(e.key==="Tab" && e.shiftKey && !e.ctrlKey && !e.metaKey && !e.altKey && !control(e.target) && lastEditorIntent && (editor.contains(e.target)||savedSelection||insertionPoint)){
+          const point=currentSelection()?.f || savedSelection?.f || insertionPoint;
+          if(point && !point.key){e.preventDefault();e.stopImmediatePropagation();}
+        }
+        if ((!inside(e) && !(e.key==="Tab"&&e.shiftKey&&!control(e.target)&&lastEditorIntent)) || e.isComposing || composing) return;
         const key = e.key,
           ctrl = e.ctrlKey || e.metaKey;
         if (ctrl && key === "Enter") {
@@ -6488,8 +6510,8 @@
           return;
         }
         if (key === "Tab" && !ctrl && !e.altKey) {
-          const p = currentSelection()?.f;
-          if(e.shiftKey && p && !p.key && !sectionSelection){
+          const p = currentSelection()?.f || savedSelection?.f || insertionPoint;
+          if(e.shiftKey && p && !p.key){
             stop(e);
             const b=blockById(p.id);
             if(b && b.kind!=="table" && b.kind!=="image"){

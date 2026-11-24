@@ -77,3 +77,5 @@ main{padding:12px 18px;gap:14px}
 #editor table[data-table-align="left"]{margin-left:0!important;margin-right:auto!important}
 #editor table[data-table-align="right"]{margin-left:auto!important;margin-right:0!important}
 #editor table[data-table-align="center"]{margin-left:auto!important;margin-right:auto!important}
+
+.formatting-overlay{position:absolute;left:0;top:0;pointer-events:none;z-index:20;color:#438b9f;user-select:none}.formatting-overlay span{position:absolute;font:12px/1.2 sans-serif;text-align:center;pointer-events:none}@media print{.formatting-overlay{display:none}}
