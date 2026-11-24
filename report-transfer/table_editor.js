@@ -6501,7 +6501,7 @@
                 const walker=document.createTreeWalker(h,NodeFilter.SHOW_TEXT);
                 let node,first=null,last=null,remaining=offset;
                 while((node=walker.nextNode())){first ||= node;if(remaining<=node.length){last=node;break;}remaining-=node.length;}
-                if(first&&last){const range=document.createRange();range.setStart(first,0);range.setEnd(last,remaining);const rects=range.getClientRects();if(rects.length)width=rects[0].width;}
+                if(first&&last){const range=document.createRange();range.setStart(first,0);range.setEnd(last,remaining);const rects=range.getClientRects();if(rects.length){const firstLine=[...rects].filter(r=>Math.abs(r.top-rects[0].top)<2);width=Math.max(...firstLine.map(r=>r.right))-Math.min(...firstLine.map(r=>r.left));}}
               }
               checkpoint();b.manualHangingIndentPt=Math.max(0,width*.75);
               b.style ||= {};b.style.hangingIndentPt=b.manualHangingIndentPt;
