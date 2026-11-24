@@ -710,7 +710,7 @@
       e.preventDefault();
       importDocument(html, text);
     });
-  $("convert").onclick = () => importDocument(sourceClipboard?.text === $("source").value ? sourceClipboard.html : "", $("source").value);
+  $("convert").onclick = () => importDocument(sourceClipboard?.text === $("source").value ? sourceClipboard.html : "", $("source").value, true);
   $("clear").onclick = () => {
     save();
     extraRects = [];
