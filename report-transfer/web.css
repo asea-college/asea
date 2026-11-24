@@ -22,3 +22,8 @@
 .font-choice-name{font-size:16px;line-height:1.4;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .font-choice-sample{font-size:14px;line-height:1.4;color:#54667c}
 .font-picker-empty{padding:12px;font:14px/1.6 sans-serif;white-space:normal}
+
+/* Twenty compact preview rows on screens with enough room below the field. */
+.font-picker-option{min-height:34px;height:34px;padding:5px 12px;flex-direction:row;align-items:center;gap:10px;box-sizing:border-box}
+.font-choice-name{flex:1;min-width:0;line-height:24px}
+.font-choice-sample{flex-shrink:0;line-height:24px;color:#65768b}

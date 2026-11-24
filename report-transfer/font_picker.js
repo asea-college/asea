@@ -13,7 +13,7 @@ document.addEventListener('DOMContentLoaded',()=>{
    const r=input.getBoundingClientRect(),width=Math.min(Math.max(r.width,300),innerWidth-16);
    menu.style.left=Math.max(8,Math.min(r.left,innerWidth-width-8))+'px';
    menu.style.top=(r.bottom+4)+'px';menu.style.width=width+'px';
-   menu.style.maxHeight=Math.max(100,Math.min(320,innerHeight-r.bottom-16))+'px';
+   menu.style.maxHeight=Math.max(100,Math.min(690,innerHeight-r.bottom-16))+'px';
  }
  function close(){menu.hidden=true;input.setAttribute('aria-expanded','false');input.removeAttribute('aria-activedescendant');}
  function activate(i){
