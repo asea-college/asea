@@ -207,6 +207,7 @@
     if(b.kind==="table" || b.kind==="image")return;
     b.style ||= {};
     if(b.spaceIndent){b.style.indentLeftPt=0;b.style.firstLinePt=0;b.spaceIndentWidthPt=0;}
+    if(Number.isFinite(b.manualHangingIndentPt)){b.style.hangingIndentPt=b.manualHangingIndentPt;return;}
     const prefix=String(b.text||"").match(/^[ \u00a0]*(?:\d+[.)]|[가-하][.)]|[•●▪◦○□■▶▷※-])[ \u00a0]+/)?.[0];
     b.style.hangingIndentPt=documentOptions.autoHang!==false && prefix
       ? Math.max(0,measure(prefix,b.style.fontSize||baseStyle.fontSize,b.style.fontFamily||baseStyle.fontFamily)*.75)
@@ -215,7 +216,7 @@
   function refreshHangingDOM(){
     if(documentOptions.autoHang===false)return;
     for(const b of blocks){
-      if(!(b.style?.hangingIndentPt>0))continue;
+      if(Number.isFinite(b.manualHangingIndentPt) || !(b.style?.hangingIndentPt>0))continue;
       const el=editor.querySelector('[data-id="'+CSS.escape(b.id)+'"]'),host=el?.querySelector('.doc-text');
       if(!host)continue;
       const prefix=String(b.text||"").match(/^[ \u00a0]*(?:\d+[.)]|[가-하][.)]|[•●▪◦○□■▶▷※-])[ \u00a0]+/)?.[0];
@@ -6488,6 +6489,26 @@
         }
         if (key === "Tab" && !ctrl && !e.altKey) {
           const p = currentSelection()?.f;
+          if(e.shiftKey && p && !p.key && !sectionSelection){
+            stop(e);
+            const b=blockById(p.id);
+            if(b && b.kind!=="table" && b.kind!=="image"){
+              const prefix=String(b.text||"").match(/^[ \u00a0]*(?:\d+[.)]|[가-하][.)]|[•●▪◦○□■▶▷※-])[ \u00a0]+/)?.[0] || "";
+              const offset=Math.max(p.offset||0,prefix.length);
+              let width=measure(b.text.slice(0,offset),b.style?.fontSize||baseStyle.fontSize,b.style?.fontFamily||baseStyle.fontFamily);
+              const h=host(p);
+              if(h && offset){
+                const walker=document.createTreeWalker(h,NodeFilter.SHOW_TEXT);
+                let node,first=null,last=null,remaining=offset;
+                while((node=walker.nextNode())){first ||= node;if(remaining<=node.length){last=node;break;}remaining-=node.length;}
+                if(first&&last){const range=document.createRange();range.setStart(first,0);range.setEnd(last,remaining);const rects=range.getClientRects();if(rects.length)width=rects[0].width;}
+              }
+              checkpoint();b.manualHangingIndentPt=Math.max(0,width*.75);
+              b.style ||= {};b.style.hangingIndentPt=b.manualHangingIndentPt;
+              render();select(p);status("줄맞춤 적용 · 둘째 줄부터 지정한 본문 위치에 맞춥니다.");
+            }
+            return;
+          }
           if (p?.key) {
             stop(e);
             const hs = hosts(),
