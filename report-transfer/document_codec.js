@@ -424,6 +424,10 @@
     }
     const wrapper = doc.body.firstElementChild;
     if (wrapper) {
+      const width=Math.max(240,Math.min(1200,Number(wrapper.getAttribute("data-document-width")) || 620));
+      wrapper.style.setProperty("width",width+"px","important");
+      wrapper.style.setProperty("max-width","100%","important");
+      wrapper.style.setProperty("box-sizing","border-box","important");
       wrapper.setAttribute("xmlns:w", "urn:schemas-microsoft-com:office:word");
       wrapper.setAttribute(
         "xmlns:o",
@@ -943,7 +947,7 @@
     });
     return {
       html:
-        '<div data-document="1" style="max-width:100%;font-family:휴먼명조,HYHumanMyeongJo,serif;color:#000;background:#fff;">' +
+        '<div data-document="1" data-document-width="' + (Math.max(240,Math.min(1200,Number(opts.width)||620))) + '" style="max-width:100%;font-family:휴먼명조,HYHumanMyeongJo,serif;color:#000;background:#fff;">' +
         html.join("") +
         "</div>",
       rtf: rtf + "}",
