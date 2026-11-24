@@ -383,7 +383,7 @@
           continue;
         }
         if (/^(P|H[1-6]|PRE|LI|BLOCKQUOTE)$/.test(n.tagName)) {
-          out.push(paragraph(n));
+          if(n.querySelector("table")) walk(n); else out.push(paragraph(n));
           continue;
         }
         if (n.tagName === "IMG") {

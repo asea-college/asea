@@ -415,6 +415,7 @@
       }
       insertDocumentBlocks(parsed, replace);
       $("source").value = text || "";
+      if(!html && !text.includes("\t")) status("일반 텍스트로 가져왔습니다. 원본에 표가 있다면 한글이 표 서식을 브라우저에 전달했는지 확인이 필요합니다.");
     } catch (e) {
       status(e.message, true);
     }
@@ -690,10 +691,12 @@
     );
     document.dispatchEvent(new Event("editor-content-changed"));
   });
+  let sourceClipboard = null;
+  $("source").addEventListener("input", () => { sourceClipboard = null; });
   for (const el of [$("source"), editor])
     el.addEventListener("paste", (e) => {
-      const html = e.clipboardData.getData("text/html"),
-        text = e.clipboardData.getData("text/plain");
+      const {html, text} = window.OfficeClipboard ? window.OfficeClipboard.read(e.clipboardData) : {html:e.clipboardData.getData("text/html"),text:e.clipboardData.getData("text/plain")};
+      if(el === $("source")) sourceClipboard = {html,text};
       if (
         el === editor &&
         e.target.closest(".doc-text,.table-content") &&
@@ -707,7 +710,7 @@
       e.preventDefault();
       importDocument(html, text);
     });
-  $("convert").onclick = () => importDocument("", $("source").value);
+  $("convert").onclick = () => importDocument(sourceClipboard?.text === $("source").value ? sourceClipboard.html : "", $("source").value);
   $("clear").onclick = () => {
     save();
     extraRects = [];
@@ -722,6 +725,7 @@
     activeImage = null;
     insertionPoint = null;
     $("source").value = "";
+    sourceClipboard = null;
     render();
   };
   if($("autoHang"))$("autoHang").addEventListener("change",()=>{
