@@ -27,3 +27,29 @@
 .font-picker-option{min-height:34px;height:34px;padding:5px 12px;flex-direction:row;align-items:center;gap:10px;box-sizing:border-box}
 .font-choice-name{flex:1;min-width:0;line-height:24px}
 .font-choice-sample{flex-shrink:0;line-height:24px;color:#65768b}
+
+/* Compact desktop menu: one shared command row, wrapping settings row. */
+.compact-header{padding:12px 22px;gap:16px;min-height:68px;align-items:center;flex-wrap:wrap}
+.compact-brand{min-width:0;flex:1 1 430px}.compact-header h1{font-size:20px;line-height:1.35;margin:0}
+.compact-header .app-caption{margin:3px 0 0;font-size:14px;line-height:1.4}
+.header-actions{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.header-actions .app-actions,.header-actions .copy-actions{border:0;padding:0;margin:0;gap:7px}
+.compact-menu{flex-shrink:0;border-bottom:1px solid #d8dfe8;background:#f8fafc}
+.compact-menu .command-bar{padding:6px 16px;gap:4px;max-height:none;overflow:visible;border-bottom:1px solid #e1e7ef;align-items:center}
+.save-actions{display:flex;gap:4px;align-items:center;padding-right:9px;margin-right:5px;border-right:1px solid #ccd7e3}
+.break-actions{display:flex;gap:4px;padding-left:7px;margin-left:3px;border-left:1px solid #ccd7e3}
+.break-actions button{width:34px;height:34px;min-height:34px;font-size:20px;padding:2px}
+.compact-menu .tool-icon{width:32px;height:32px;min-height:32px;padding:6px;border-radius:5px}
+.compact-menu .command-bar select{max-width:150px;height:32px;min-height:32px;font-size:14px}
+.compact-menu .command-bar>button:not(.tool-icon){min-height:32px;padding:4px 10px}
+.compact-menu #selection{margin-left:auto;font-size:14px;white-space:nowrap;padding:0 4px}
+.compact-menu .settings-bar{padding:6px 16px;gap:6px 12px;align-items:center;border:0;background:#fff}
+.compact-menu .settings-bar label{gap:5px;font-size:14px;min-height:32px}
+.compact-menu .settings-bar input[type=number]{width:56px;height:30px;padding:3px 5px}
+.compact-menu #fontFamily{width:170px;min-height:32px;height:32px}
+.compact-menu #loadFonts{min-height:32px;height:32px;padding:4px 8px;font-size:14px}
+.compact-menu #enterBehavior{max-width:195px;height:32px;min-height:32px;font-size:14px;padding:3px}
+.compact-menu .settings-bar input[type=color]{width:30px;height:27px}
+main{padding:12px 18px;gap:14px}
+@media(min-width:1500px){.compact-header{flex-wrap:nowrap}.compact-menu .settings-bar{gap:5px 10px}}
+@media(max-width:850px){.compact-header{padding:10px 12px;gap:9px}.compact-brand{flex-basis:100%}.compact-header h1{font-size:18px}.header-actions{gap:8px}.compact-menu .command-bar,.compact-menu .settings-bar{padding:6px 10px}.compact-menu #selection{margin-left:0}.save-actions{padding-right:7px;margin-right:2px}main{padding:10px}}
