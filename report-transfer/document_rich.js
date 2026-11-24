@@ -404,10 +404,37 @@
     D.lastImportWarnings = warnings;
     return out;
   }
+
+  // Hangul may expose automatic paragraph numbers only in text/plain.
+  // Recover only numbers explicitly present there, matching paragraph text in order.
+  function restoreClipboardNumbers(blocks, text) {
+    const lines=String(text||"").replace(/\r\n?/g,"\n").split("\n");
+    const canon=v=>String(v||"").replace(/[\s\u00a0]+/g,"");
+    let cursor=0;
+    for(const b of blocks) {
+      if(b.kind==="table"||b.kind==="image"||!b.text?.trim())continue;
+      const target=canon(b.text);
+      for(let i=cursor;i<lines.length;i++){
+        const line=lines[i],m=/^([ \u00a0]*)(\d+[.)]|[가-하][.)]|[•●▪])[ \u00a0]+(.+)$/.exec(line);
+        if(canon(line)===target){cursor=i+1;break;}
+        if(!m||canon(m[3])!==target)continue;
+        const prefix=m[1]+m[2]+" ";
+        b.text=prefix+b.text;
+        for(const key of ["marks","links"])for(const r of b[key]||[]){r.start+=prefix.length;r.end+=prefix.length;}
+        for(const image of b.inlineImages||[])image.offset+=prefix.length;
+        b.literal=true;
+        b.hierarchySpacingNormalized=false;
+        cursor=i+1;break;
+      }
+    }
+    return blocks;
+  }
+  D.restoreClipboardNumbers=restoreClipboardNumbers;
+
   D.parse = function (html, text, mode) {
     if (html && /<(?:p|div|table|h[1-6]|img|ul|ol)\b/i.test(html)) {
       const blocks = parseHTML(html);
-      if (blocks.length) return D.normalize(blocks, mode);
+      if (blocks.length) return D.normalize(restoreClipboardNumbers(blocks, text), mode);
     }
     D.lastImportWarnings = [];
     return plain(html, text, mode);
