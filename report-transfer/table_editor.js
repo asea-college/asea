@@ -3328,6 +3328,7 @@
         shiftTextRanges(b, 0, prefix.length);
       }
       b.literal = true;
+      b.hierarchySpacingNormalized = true;
     }
   }
   function removeHierarchyText(b) {
@@ -3369,6 +3370,7 @@
       shiftTextRanges(b, 0, prefix.length);
       b.hierarchyPrefix = prefix;
       b.literal = true;
+      b.hierarchySpacingNormalized = true;
     });
   }
 
