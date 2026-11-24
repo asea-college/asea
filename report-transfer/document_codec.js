@@ -332,12 +332,17 @@
       table.style.float = "none";
       table.style.textAlign = a;
     }
+    // Preserve legacy font attributes when the board filters CSS.
     for (const font of doc.querySelectorAll("font")) {
-      const span = doc.createElement("span");
-      span.style.fontFamily = font.getAttribute("face") || "휴먼명조";
-      span.style.fontSize = font.style.fontSize || "10pt";
-      while (font.firstChild) span.append(font.firstChild);
-      font.replaceWith(span);
+      const p=font.closest("p"), family=font.getAttribute("face") || p?.style.fontFamily || "휴먼명조";
+      const size=font.style.fontSize || p?.style.fontSize || "10pt", pt=parseFloat(size) || 10;
+      font.setAttribute("face",family);
+      font.setAttribute("color",p?.style.color || "#000000");
+      font.setAttribute("size",String(pt<=8?1:pt<=10?2:pt<=12?3:pt<=14?4:pt<=18?5:pt<=24?6:7));
+      font.style.setProperty("font-family",family,"important");
+      font.style.setProperty("font-size",size,"important");
+      font.style.setProperty("color",p?.style.color || "#000000","important");
+      font.style.setProperty("line-height",p?.style.lineHeight || "1.5","important");
     }
     for (const td of doc.querySelectorAll("td")) {
       const size = td.style.fontSize || "10pt",
@@ -370,13 +375,52 @@
       while (p.firstChild) p.before(p.firstChild);
       p.remove();
     }
-    for (const p of doc.querySelectorAll("p")) {
-      p.style.whiteSpace = "pre-wrap";
-      const span = doc.createElement("span");
-      span.style.fontFamily = p.style.fontFamily || "inherit";
-      span.style.fontSize = p.style.fontSize || "inherit";
-      while (p.firstChild) span.append(p.firstChild);
-      p.append(span);
+    // Editor/plain clipboard keeps U+0020. Board HTML uses non-collapsing
+    // space characters and explicit BRs so saved content survives CSS resets.
+    for (const p of [...doc.querySelectorAll("p")]) {
+      const line=doc.createElement("div");
+      line.setAttribute("align",p.getAttribute("align") || p.style.textAlign || "left");
+      line.style.setProperty("display","block","important");
+      line.style.setProperty("margin","0","important");
+      line.style.setProperty("padding","0","important");
+      line.style.setProperty("text-align",p.style.textAlign || p.getAttribute("align") || "left","important");
+      line.setAttribute("data-academic-paragraph","1");
+      for(const property of ["font-family","font-size","line-height","color","font-weight","letter-spacing"]) {
+        if(p.style.getPropertyValue(property)) line.style.setProperty(property,p.style.getPropertyValue(property),"important");
+      }
+      line.style.whiteSpace="normal";
+      line.style.setProperty("line-height",p.style.lineHeight || "1.5","important");
+      const walker=doc.createTreeWalker(p,4);const nodes=[];let textNode;
+      while((textNode=walker.nextNode()))nodes.push(textNode);
+      for(const n of nodes) {
+        const parts=n.nodeValue.split("\n");
+        if(parts.length===1)continue;
+        const fragment=doc.createDocumentFragment();
+        parts.forEach((part,i)=>{if(i)fragment.append(doc.createElement("br"));fragment.append(doc.createTextNode(part));});
+        n.replaceWith(fragment);
+      }
+      while(p.firstChild)line.append(p.firstChild);
+      const start=doc.createTreeWalker(line,4);let atStart=true,n;
+      while((n=start.nextNode())) {
+        n.nodeValue=n.nodeValue.replace(/ {2,}/g,value=>"\u00a0".repeat(value.length));
+        if(atStart)n.nodeValue=n.nodeValue.replace(/^ +/,value=>"\u00a0".repeat(value.length));
+        if(n.nodeValue.length)atStart=false;
+      }
+      const group=doc.createDocumentFragment();
+      line.append(doc.createElement("br"));
+      group.append(line);
+      const gap=doc.createElement("br");gap.setAttribute("data-academic-gap","1");
+      if(parseFloat(p.style.marginBottom)>0) gap.style.lineHeight=p.style.marginBottom;
+      group.append(gap);p.replaceWith(group);
+    }
+    for(const link of doc.querySelectorAll("a[href]")) {
+      link.style.setProperty("color","#0563c1","important");
+      link.style.setProperty("text-decoration","underline","important");
+      link.setAttribute("target","_blank");link.setAttribute("rel","noopener noreferrer");
+      for(const child of link.querySelectorAll("font,span")) {
+        child.style.setProperty("color","#0563c1","important");
+        if(child.tagName==="FONT")child.setAttribute("color","#0563c1");
+      }
     }
     const wrapper = doc.body.firstElementChild;
     if (wrapper) {
