@@ -13,3 +13,12 @@
 @media(max-width:650px){.break-tools{padding:8px 10px}.break-tools span{white-space:normal}}
 
 #editor .doc-block:not(.table-block):not(.image-block){padding-left:var(--hanging-indent,0pt)!important;text-indent:calc(0pt - var(--hanging-indent,0pt))!important;--paragraph-indent:var(--hanging-indent,0pt)!important}
+
+.font-picker-shell{display:inline-flex;position:relative;align-items:center}#fontFamily{padding-right:28px;background:#fff!important;color:#202d40!important;color-scheme:light}
+.font-picker-arrow{position:absolute;right:2px;top:2px;bottom:2px;width:25px;min-height:26px;padding:0;border:0;background:#fff!important;color:#33465d!important;font-size:15px;border-radius:4px}
+.font-picker-menu{position:fixed;z-index:10050;background:#fff!important;color:#202d40!important;color-scheme:light;border:1px solid #b9c9d9;border-radius:8px;box-shadow:0 8px 24px #13263b26;padding:5px 0;overflow-y:auto;overflow-x:hidden}
+.font-picker-menu[hidden]{display:none}.font-picker-option{padding:9px 12px;display:flex;flex-direction:column;gap:3px;cursor:pointer;background:#fff;color:#202d40;min-height:52px}
+.font-picker-option:hover,.font-picker-option[aria-selected=true]{background:#eaf2fb;color:#163e6b}
+.font-choice-name{font-size:16px;line-height:1.4;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.font-choice-sample{font-size:14px;line-height:1.4;color:#54667c}
+.font-picker-empty{padding:12px;font:14px/1.6 sans-serif;white-space:normal}
