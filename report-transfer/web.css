@@ -11,3 +11,5 @@
 #editor .insert-slot:empty{min-height:0;height:0;line-height:0}
 .break-tools{font-size:14px;padding:8px 22px}.break-tools span{color:#526176;font-size:14px}
 @media(max-width:650px){.break-tools{padding:8px 10px}.break-tools span{white-space:normal}}
+
+#editor .doc-block:not(.table-block):not(.image-block){padding-left:var(--hanging-indent,0pt)!important;text-indent:calc(0pt - var(--hanging-indent,0pt))!important;--paragraph-indent:var(--hanging-indent,0pt)!important}

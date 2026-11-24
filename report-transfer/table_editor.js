@@ -204,16 +204,18 @@
     $("redo").disabled = !redo.length;
   }
   function syncSpaceIndent(b) {
-    if (!b.spaceIndent || b.kind === "table" || b.kind === "image") return;
+    if(b.kind==="table" || b.kind==="image")return;
     b.style ||= {};
-    b.style.indentLeftPt = 0;
-    b.style.firstLinePt = 0;
-    b.spaceIndentWidthPt = 0;
+    if(b.spaceIndent){b.style.indentLeftPt=0;b.style.firstLinePt=0;b.spaceIndentWidthPt=0;}
+    const prefix=String(b.text||"").match(/^[ \u00a0]*(?:\d+[.)]|[가-하][.)]|[•●▪◦○□■▶▷※-])[ \u00a0]+/)?.[0];
+    b.style.hangingIndentPt=documentOptions.autoHang!==false && prefix
+      ? Math.max(0,measure(prefix,b.style.fontSize||baseStyle.fontSize,b.style.fontFamily||baseStyle.fontFamily)*.75)
+      : 0;
   }
-
   function render() {
     if($("enterBehavior"))$("enterBehavior").value=documentOptions.enterBehavior || "paragraph";
     if ($("fontFamily")) $("fontFamily").value = baseStyle.fontFamily;
+    if($("autoHang"))$("autoHang").checked=documentOptions.autoHang!==false;
 
     materializeText();
     if (!(baseStyle.lineHeight > 0)) baseStyle.lineHeight = 1;
@@ -317,6 +319,7 @@
         el.style.lineHeight = b.style?.lineHeightPt
           ? b.style.lineHeightPt + "pt"
           : b.style?.lineHeight || o.lineHeight;
+        el.style.setProperty("--hanging-indent",(b.style?.hangingIndentPt || 0)+"pt");
         el.style.paddingLeft = (b.style?.indentLeftPt || 0) + "pt";
         el.style.setProperty(
           "--paragraph-indent",
@@ -704,6 +707,10 @@
     $("source").value = "";
     render();
   };
+  if($("autoHang"))$("autoHang").addEventListener("change",()=>{
+    save();documentOptions.autoHang=$("autoHang").checked;render();
+    status(documentOptions.autoHang?"자동 내어쓰기：둘째 줄부터 기호 뒤 본문에 맞춤":"자동 내어쓰기 해제");
+  });
   for (const id of ids)
     $(id).addEventListener("change", () => {
       save();

@@ -1,0 +1,13 @@
+<!doctype html><html lang="ko"><meta charset="utf-8"><title>내어쓰기 출력 검사</title><script src="../table_codec.js"></script><script src="../document_codec.js?v=20261124-11"></script><h1>내어쓰기 출력 검사</h1><ul id="results"></ul><div id="preview" style="width:300px;background:#f7f7f7"></div><script>
+const checks=[];function check(name,pass){checks.push(pass);const li=document.createElement('li');li.textContent=(pass?'PASS: ':'FAIL: ')+name;document.getElementById('results').append(li);}
+const text='  • 본문 시작점에 둘째 줄부터 맞추는 긴 문장입니다. 여러 줄이 되어도 기호 뒤의 본문 시작 위치를 유지합니다.';
+const output=DocumentCodec.convert([{kind:'paragraph',literal:true,text,level:null,style:{hangingIndentPt:18}}],{width:300});
+check('원문 실제 스페이스 유지',output.text===text);
+check('RTF 내어쓰기 보존',output.rtf.includes('\\li360')&&output.rtf.includes('\\fi-360'));
+const html=DocumentCodec.ckeditorHTML(output.html);document.getElementById('preview').innerHTML=html;
+const p=document.querySelector('[data-academic-paragraph]');
+check('학사정보 HTML 내어쓰기 보존',p.style.paddingLeft==='18pt'&&p.style.textIndent==='-18pt');
+check('배경 투명 유지',!document.querySelector('[data-document]').style.backgroundColor);
+check('위계 공백 문자 개수 유지',p.textContent.startsWith('\u00a0\u00a0•'));
+document.title=checks.every(Boolean)?'PASS · 내어쓰기 출력 검사':'FAIL · 내어쓰기 출력 검사';
+</script></html>

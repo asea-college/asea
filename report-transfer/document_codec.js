@@ -390,6 +390,12 @@
       for(const property of ["font-family","font-size","line-height","color","font-weight","letter-spacing","background-color"]) {
         if(p.style.getPropertyValue(property)) line.style.setProperty(property,p.style.getPropertyValue(property),"important");
       }
+      const hanging=Math.max(0,parseFloat(p.getAttribute("data-hanging-indent"))||0);
+      if(hanging){
+        line.style.setProperty("padding-left",hanging+"pt","important");
+        line.style.setProperty("text-indent",-hanging+"pt","important");
+        line.setAttribute("data-hanging-indent",String(hanging));
+      }
       line.style.whiteSpace="normal";
       line.style.setProperty("line-height",p.style.lineHeight || "1.5","important");
       const walker=doc.createTreeWalker(p,4);const nodes=[];let textNode;
@@ -844,7 +850,7 @@
         bold = b.style?.bold ?? b.kind === "heading";
       const visible = " ".repeat(spaces) + (pre ? pre + " " : "") + b.text;
       html.push(
-        '<p align="' +
+        '<p data-hanging-indent="' + (b.style?.hangingIndentPt || 0) + '" align="' +
           (b.style?.align || "left") +
           '" style="' +
           (b.pageBreakBefore
@@ -862,9 +868,9 @@
           "pt " +
           blockGap +
           "pt " +
-          (b.style?.indentLeftPt || 0) +
+          ((b.style?.indentLeftPt || 0)+(b.style?.hangingIndentPt || 0)) +
           "pt;text-indent:" +
-          (b.style?.firstLinePt || 0) +
+          ((b.style?.firstLinePt || 0)-(b.style?.hangingIndentPt || 0)) +
           "pt;white-space:pre-wrap;line-height:" +
           (b.style?.lineHeightPt ? b.style.lineHeightPt + "pt" : blockLine) +
           ";font-family:" +
@@ -924,11 +930,11 @@
         "\\strike" +
         (b.style?.strike ? 1 : 0) +
         "\\li" +
-        Math.round((b.style?.indentLeftPt || 0) * 20) +
+        Math.round(((b.style?.indentLeftPt || 0)+(b.style?.hangingIndentPt || 0)) * 20) +
         "\\ri" +
         Math.round((b.style?.indentRightPt || 0) * 20) +
         "\\fi" +
-        Math.round((b.style?.firstLinePt || 0) * 20) +
+        Math.round(((b.style?.firstLinePt || 0)-(b.style?.hangingIndentPt || 0)) * 20) +
         "\\sb" +
         Math.round(
           (copy[i - 1]?.kind === "table"
