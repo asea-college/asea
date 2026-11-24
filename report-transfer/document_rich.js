@@ -326,6 +326,30 @@
           out.push(table(n));
           continue;
         }
+        if (/^(OL|UL)$/.test(n.tagName)) {
+          const parents = []; for(let p=n.parentElement;p;p=p.parentElement) if(/^(OL|UL)$/.test(p.tagName)) parents.push(p);
+          const depth = Math.min(5, parents.length);
+          let number = Number(n.getAttribute("start")) || 1;
+          for(const li of [...n.children].filter(x=>x.tagName === "LI")) {
+            if(li.hasAttribute("value")) number=Number(li.getAttribute("value")) || number;
+            const copy=li.cloneNode(true);copy.querySelectorAll("ol,ul").forEach(x=>x.remove());
+            const b=paragraph(copy);
+            const existing=/^[ \u00a0]*(?:\d+[.)]|[가-하][.)]|[•●▪-])[ \u00a0]+/.test(b.text);
+            if(!existing) {
+              const marker=n.tagName === "OL" ? number+"." : "•";
+              const prefix=" ".repeat(depth*2)+marker+" ";
+              b.text=prefix+b.text.trimEnd();
+              for(const key of ["marks","links"]) for(const r of b[key]||[]) {r.start+=prefix.length;r.end+=prefix.length;}
+              for(const image of b.inlineImages||[]) image.offset+=prefix.length;
+              b.hierarchySpacingNormalized=true;
+            }
+            b.style.indentLeftPt=0;b.style.firstLinePt=0;
+            out.push(b);number++;
+            const visitNested=el=>{for(const child of el.children) {if(/^(OL|UL)$/.test(child.tagName)) walk({childNodes:[child]});else visitNested(child);}};
+            visitNested(li);
+          }
+          continue;
+        }
         if (/^(P|H[1-6]|PRE|LI|BLOCKQUOTE)$/.test(n.tagName)) {
           out.push(paragraph(n));
           continue;

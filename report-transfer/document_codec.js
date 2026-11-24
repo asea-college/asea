@@ -47,9 +47,35 @@
     literal: kind !== "table",
     ...(rows ? { rows } : {}),
   });
+  // Hierarchy indentation is stored in text as U+0020, never layout offsets.
+  function spaceHierarchy(b) {
+    if (b.hierarchySpacingNormalized || !b.literal || b.kind === "table" || b.kind === "image") return;
+    const official = /(?:^|\n)[ \u00a0]*[가-하][.)]\s/.test(b.text || "");
+    const edits = [];
+    const source = String(b.text || "");
+    const re = /^([ \u00a0]*)(\d+\.|[가-하]\.|\d+\)|[가-하]\)|[•●▪]|-)([ \u00a0]+)(?=\S)/gm;
+    let m;
+    while ((m = re.exec(source))) {
+      const mark = m[2];
+      const level = /^\d+\.$/.test(mark) ? 0 : /^[가-하]\.$/.test(mark) ? 1 : /^\d+\)$/.test(mark) ? 2 : /^[가-하]\)$/.test(mark) ? 3 : /^[•●▪]$/.test(mark) ? (official ? 4 : 2) : (official ? 5 : 3);
+      edits.push({at:m.index, old:m[1].length, value:" ".repeat(level * 2)});
+    }
+    for (const e of edits.reverse()) {
+      b.text = b.text.slice(0,e.at) + e.value + b.text.slice(e.at + e.old);
+      const offset = v => v <= e.at ? v : v >= e.at + e.old ? v + e.value.length - e.old : e.at + e.value.length;
+      for (const key of ["marks","links"]) for (const r of b[key] || []) {r.start=offset(r.start);r.end=offset(r.end);}
+      for (const img of b.inlineImages || []) img.offset=offset(img.offset);
+    }
+    if(edits.length) {
+      b.style ||= {}; b.style.indentLeftPt=0; b.style.firstLinePt=0;
+      b.spaceIndent=false; b.spaceIndentWidthPt=0;
+    }
+    b.hierarchySpacingNormalized=true;
+  }
   function normalize(blocks, mode = "report", enforce = false) {
     let previous = -1;
     for (const b of blocks) {
+      spaceHierarchy(b);
       if (b.kind === "image") continue;
       if (b.kind === "table") {
         b.rows = T.normalize(b.rows.map((r) => r.map((v) => String(v ?? ""))));
@@ -345,20 +371,7 @@
       p.remove();
     }
     for (const p of doc.querySelectorAll("p")) {
-      const lead = p.textContent.match(/^ +/);
-      if (lead) {
-        const walker = doc.createTreeWalker(p, 4);
-        let n;
-        while ((n = walker.nextNode())) {
-          if (/^ +/.test(n.nodeValue)) {
-            n.nodeValue = n.nodeValue.replace(/^ +/, (v) =>
-              "\u00a0".repeat(v.length),
-            );
-            break;
-          }
-          if (n.nodeValue.trim()) break;
-        }
-      }
+      p.style.whiteSpace = "pre-wrap";
       const span = doc.createElement("span");
       span.style.fontFamily = p.style.fontFamily || "inherit";
       span.style.fontSize = p.style.fontSize || "inherit";
@@ -774,19 +787,7 @@
         blockGap = b.style?.paragraphGap ?? gap,
         blockFont = b.style?.fontFamily || opts.fontFamily || "휴먼명조";
       const pre = prefixes[i],
-        spaces =
-          b.literal || b.level === null
-            ? 0
-            : Math.max(
-                0,
-                Math.min(
-                  40,
-                  Number(
-                    opts.steps?.[b.level]?.spaces ??
-                      b.level * (opts.ckeditor ? 2 : 1),
-                  ),
-                ),
-              ),
+        spaces = b.literal || b.level === null ? 0 : b.level * 2,
         bold = b.style?.bold ?? b.kind === "heading";
       const visible = " ".repeat(spaces) + (pre ? pre + " " : "") + b.text;
       html.push(

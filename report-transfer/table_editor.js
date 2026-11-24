@@ -205,24 +205,12 @@
   }
   function syncSpaceIndent(b) {
     if (!b.spaceIndent || b.kind === "table" || b.kind === "image") return;
-    const spaces = (b.text.match(/^[ \u00a0]*/) || [""])[0],
-      st = pointStyle({ id: b.id, start: 0, end: 0 }),
-      width = spaces
-        ? Math.max(
-            0,
-            (((measure(spaces, st.fontSize || 10, st.fontFamily || "휴먼명조") +
-              spaces.length * (st.letterSpacing || 0)) *
-              (st.fontScale || 100)) /
-              100) *
-              0.75,
-          )
-        : 0,
-      old = b.spaceIndentWidthPt || 0;
     b.style ||= {};
-    b.style.indentLeftPt = (b.style.indentLeftPt || 0) + width - old;
-    b.style.firstLinePt = (b.style.firstLinePt || 0) - width + old;
-    b.spaceIndentWidthPt = width;
+    b.style.indentLeftPt = 0;
+    b.style.firstLinePt = 0;
+    b.spaceIndentWidthPt = 0;
   }
+
   function render() {
     materializeText();
     if (!(baseStyle.lineHeight > 0)) baseStyle.lineHeight = 1;
@@ -341,7 +329,7 @@
         label.textContent =
           (b.literal || b.level === null
             ? ""
-            : " ".repeat(activeSteps?.[b.level]?.spaces ?? b.level)) +
+            : " ".repeat(b.level * 2)) +
           labels[i];
         label.contentEditable = "false";
         const content = document.createElement("span");
@@ -1009,7 +997,7 @@
         mode === "official" ? "{ko})" : "-",
         "•",
         "-",
-      ].map((pattern, i) => ({ pattern, spaces: i }));
+      ].map((pattern, i) => ({ pattern, spaces: i * 2 }));
     steps.forEach((s, i) => {
       const label = document.createElement("span");
       label.textContent = i + 1 + "단계";
@@ -1023,7 +1011,8 @@
       spaces.type = "number";
       spaces.min = 0;
       spaces.max = 40;
-      spaces.value = s.spaces;
+      spaces.value = i * 2;
+      spaces.readOnly = true;
       spaces.setAttribute("aria-label", i + 1 + "단계 앞 공백 수");
       const read = document.createElement("button");
       read.textContent = "선택 줄 읽기";
@@ -1039,7 +1028,7 @@
             "예시에서 기호가 있는 줄을 선택해 주세요.";
           return;
         }
-        spaces.value = m[1].length;
+        spaces.value = i * 2;
         pattern.value = m[2]
           .replace(/^\d+/, "{n}")
           .replace(/^[가-하](?=[.)])/, "{ko}");
@@ -3330,7 +3319,7 @@
       const prefix =
         b.level === null
           ? ""
-          : " ".repeat(activeSteps?.[b.level]?.spaces ?? b.level * 2) +
+          : " ".repeat(b.level * 2) +
             labels[i] +
             " ";
       if (prefix) {
@@ -3373,7 +3362,7 @@
     list.forEach((b, i) => {
       removeHierarchyText(b);
       const prefix =
-        " ".repeat(activeSteps?.[b.level]?.spaces ?? b.level * 2) +
+        " ".repeat(b.level * 2) +
         labels[i] +
         " ";
       b.text = prefix + b.text;
@@ -3953,7 +3942,7 @@
         spaces: 2,
         group: true,
       },
-      count = Math.max(1, Math.min(16, +config.spaces || 2)),
+      count = 2,
       chosen = selected.size ? [...selected] : anchor ? [anchor] : [];
     if (!chosen.length)
       return status(
