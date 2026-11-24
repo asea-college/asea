@@ -53,3 +53,21 @@
 main{padding:12px 18px;gap:14px}
 @media(min-width:1500px){.compact-header{flex-wrap:nowrap}.compact-menu .settings-bar{gap:5px 10px}}
 @media(max-width:850px){.compact-header{padding:10px 12px;gap:9px}.compact-brand{flex-basis:100%}.compact-header h1{font-size:18px}.header-actions{gap:8px}.compact-menu .command-bar,.compact-menu .settings-bar{padding:6px 10px}.compact-menu #selection{margin-left:0}.save-actions{padding-right:7px;margin-right:2px}main{padding:10px}}
+
+/* Prominent centered copy actions and denser settings. */
+@media(min-width:1000px){
+ .compact-header{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:18px;flex-wrap:nowrap}
+ .compact-brand{grid-column:1;grid-row:1}
+ .header-actions{display:contents}
+ .header-actions .copy-actions{grid-column:2;grid-row:1}
+ .header-actions .app-actions{grid-column:3;grid-row:1;justify-self:end}
+}
+.header-actions .copy-actions button{width:180px;height:40px;min-height:40px;padding:7px 12px;font-size:15px;opacity:1!important}
+#copy:disabled{background:#285d9b;color:#fff;border-color:#285d9b;opacity:1!important}
+.compact-menu .settings-bar{gap:5px 8px}
+.compact-menu .settings-bar label{font-size:13px!important;gap:4px}
+.compact-menu .settings-bar input[type=number]{width:48px}
+.compact-menu #fontFamily{width:150px}
+.compact-menu #loadFonts{font-size:13px;padding:4px 6px}
+.compact-menu #enterBehavior{max-width:175px;font-size:13px}
+.compact-menu .settings-bar input[type=color]{width:26px}
