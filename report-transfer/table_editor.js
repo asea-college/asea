@@ -3157,15 +3157,21 @@
             fontSize: Math.max(8, Math.min(36, +$(id).value || 10)),
           });
         else {
-          const list = activeParagraphs();
-          if (!list.length && allDocumentSelected)
-            selected = new Set(blocks.map((b) => b.id));
-          const normalized =
-            id === "lineHeight"
-              ? Math.max(0.5, +$(id).value || 1)
-              : Math.max(0, +$(id).value || 0);
-          $(id).value = normalized;
-          paragraphStyle({ [id]: normalized });
+          const normalized=id==="lineHeight"?Math.max(1,Math.min(2,+$(id).value||1.5)):Math.max(0,Math.min(24,+$(id).value||0));
+          save();$(id).value=normalized;baseStyle[id]=normalized;
+          for(const b of blocks){
+            if(b.kind==="image")continue;
+            if(b.kind==="table"){
+              if(id==="lineHeight"){
+                const options=tableOptions(b);options.lineHeight=normalized;
+                for(const st of Object.values(options.cellStyles || {})){st.lineHeight=normalized;delete st.lineHeightPt;}
+              }
+              continue;
+            }
+            b.style ||= {};b.style[id]=normalized;
+            if(id==="lineHeight")delete b.style.lineHeightPt;
+          }
+          render();status((id==="lineHeight"?"줄 간격 ":"문단 간격 ")+normalized+(id==="paragraphGap"?"pt":"")+" · 문서 전체 적용");
         }
       },
       true,
