@@ -71,3 +71,9 @@ main{padding:12px 18px;gap:14px}
 .compact-menu #loadFonts{font-size:13px;padding:4px 6px}
 .compact-menu #enterBehavior{max-width:175px;font-size:13px}
 .compact-menu .settings-bar input[type=color]{width:26px}
+
+/* Table blocks share the paragraph left edge; alignment follows the source. */
+#editor .table-block{padding-left:0!important;padding-right:0!important}
+#editor table[data-table-align="left"]{margin-left:0!important;margin-right:auto!important}
+#editor table[data-table-align="right"]{margin-left:auto!important;margin-right:0!important}
+#editor table[data-table-align="center"]{margin-left:auto!important;margin-right:auto!important}

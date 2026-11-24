@@ -248,7 +248,8 @@
           },
         },
         o = b.tableOptions;
-      const align = el.getAttribute("align") || css(el)["text-align"];
+      const tableCSS = css(el);
+      const align = el.getAttribute("align") || (tableCSS["margin-left"] === "auto" ? (tableCSS["margin-right"] === "auto" ? "center" : "right") : "left");
       o.tableAlign = ["left", "center", "right"].includes(align)
         ? align
         : "left";
