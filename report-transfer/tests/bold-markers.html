@@ -1,0 +1,17 @@
+<!doctype html><html lang="ko"><meta charset="utf-8"><title>굵게 표시 변환 검사</title><script src="../table_codec.js"></script><script src="../document_codec.js"></script><script src="../document_rich.js?v=20261124-bold-10"></script><h1>굵게 표시 변환 검사</h1><ul id="results"></ul><script>
+const checks=[];
+function check(name,pass){checks.push(pass);const li=document.createElement('li');li.textContent=(pass?'PASS: ':'FAIL: ')+name;document.getElementById('results').append(li);}
+const html='<p><span>**기본 본문 배경:</span><span>** 투명 처리</span></p><p>선택 메뉴에서 **‘바로 다음 줄·추가 간격 없음’**도 선택할 수 있습니다.</p><p>남은 기호 **</p><p><a href="https://example.org">**링크**</a> <code>**코드 보존**</code></p><pre>**코드 블록 보존**</pre><table><tr><td>**항목**</td><td>내용</td></tr></table>';
+const bs=DocumentCodec.parse(html,'');
+check('분리된 HTML span의 별표 제거',bs[0].text==='기본 본문 배경: 투명 처리');
+check('굵은 서식 유지',bs[0].marks.some(m=>m.style.bold&&m.start===0&&m.end===9));
+check('스마트 따옴표 내부 기호 제거',!bs[1].text.includes('**'));
+check('짝이 맞지 않는 잔여 기호 제거',!bs[2].text.includes('**'));
+check('링크 문자 범위 재계산',bs[3].links[0].start===0&&bs[3].links[0].end===2);
+check('인라인 코드 보존',bs[3].text.includes('**코드 보존**'));
+check('코드 블록 보존',bs[4].text==='**코드 블록 보존**');
+check('표 셀 별표 제거',bs[5].rows[0][0]==='항목');
+const out=DocumentCodec.convert(bs.slice(0,3));
+check('복사용 HTML과 일반 텍스트에도 별표 없음',!out.html.includes('**')&&!out.text.includes('**'));
+document.title=checks.every(Boolean)?'PASS · 굵게 표시 변환 검사':'FAIL · 굵게 표시 변환 검사';
+</script></html>

@@ -40,6 +40,36 @@
           ? "#ffffff"
           : undefined;
   }
+  // Resolve Markdown bold markers even when clipboard HTML split them across spans.
+  // Update every offset against the original text before stripping the tokens.
+  function resolveBoldTokens(b) {
+    if(b.preserveMarkdown || !b.text?.includes("**"))return b;
+    const source=b.text, tokens=[];
+    for(const m of source.matchAll(/\*\*/g)){
+      if(m.index>0 && source[m.index-1]==="\\")continue;
+      if((b.markdownCodeRanges||[]).some(r=>m.index>=r.start && m.index<r.end))continue;
+      tokens.push(m.index);
+    }
+    if(!tokens.length)return b;
+    const offset=n=>{
+      let lo=0,hi=tokens.length;
+      while(lo<hi){const mid=(lo+hi)>>>1;if(tokens[mid]<n)lo=mid+1;else hi=mid;}
+      return n-2*lo+(lo?Math.max(0,2-(n-tokens[lo-1])):0);
+    };
+    const marks=(b.marks||[]).map(m=>({...m,start:offset(m.start),end:offset(m.end)})).filter(m=>m.end>m.start);
+    for(let i=0;i+1<tokens.length;i+=2){
+      const start=offset(tokens[i]+2),end=offset(tokens[i+1]);
+      if(end>start)marks.push({start,end,style:{bold:true}});
+    }
+    b.marks=marks;
+    b.links=(b.links||[]).map(l=>({...l,start:offset(l.start),end:offset(l.end)})).filter(l=>l.end>l.start);
+    for(const image of b.inlineImages||[])image.offset=offset(image.offset);
+    const chunks=[];let from=0;
+    for(const at of tokens){chunks.push(source.slice(from,at));from=at+2;}
+    chunks.push(source.slice(from));b.text=chunks.join("");
+    delete b.markdownCodeRanges;
+    return b;
+  }
   function parseHTML(html) {
     const doc = new DOMParser().parseFromString(html, "text/html"),
       out = [],
@@ -124,6 +154,7 @@
           literal: true,
           level: null,
           text: "",
+          preserveMarkdown: el.tagName==="PRE",
           style: s,
           marks: [],
           links: [],
@@ -150,6 +181,7 @@
           const text = n.nodeValue.replace(/\r/g, "");
           const at = b.text.length;
           b.text += text;
+          if(n.parentElement?.closest("code,pre"))(b.markdownCodeRanges ||= []).push({start:at,end:b.text.length});
           if (text.length) {
             b.marks.push({ start: at, end: b.text.length, style: st });
             if (link) b.links.push({ start: at, end: b.text.length, ...link });
@@ -195,7 +227,7 @@
           );
       }
       for (const child of el.childNodes) walk(child, s, null);
-      return b;
+      return resolveBoldTokens(b);
     }
     function table(el) {
       const rows = T.parse(el.outerHTML, ""),
