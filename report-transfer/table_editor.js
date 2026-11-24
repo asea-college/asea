@@ -212,6 +212,22 @@
       ? Math.max(0,measure(prefix,b.style.fontSize||baseStyle.fontSize,b.style.fontFamily||baseStyle.fontFamily)*.75)
       : 0;
   }
+  function refreshHangingDOM(){
+    if(documentOptions.autoHang===false)return;
+    for(const b of blocks){
+      if(!(b.style?.hangingIndentPt>0))continue;
+      const el=editor.querySelector('[data-id="'+CSS.escape(b.id)+'"]'),host=el?.querySelector('.doc-text');
+      if(!host)continue;
+      const prefix=String(b.text||"").match(/^[ \u00a0]*(?:\d+[.)]|[가-하][.)]|[•●▪◦○□■▶▷※-])[ \u00a0]+/)?.[0];
+      if(!prefix)continue;
+      const walker=document.createTreeWalker(host,NodeFilter.SHOW_TEXT);let first=null,last=null,remaining=prefix.length,node;
+      while((node=walker.nextNode())){first ||= node;if(remaining<=node.length){last=node;break;}remaining-=node.length;}
+      if(!first||!last)continue;
+      const range=document.createRange();range.setStart(first,0);range.setEnd(last,remaining);
+      const width=range.getBoundingClientRect().width;
+      if(width>0){b.style.hangingIndentPt=width*.75;el.style.setProperty("--hanging-indent",b.style.hangingIndentPt+"pt");}
+    }
+  }
   function render() {
     if($("enterBehavior"))$("enterBehavior").value=documentOptions.enterBehavior || "paragraph";
     if ($("fontFamily")) $("fontFamily").value = baseStyle.fontFamily;
@@ -354,6 +370,7 @@
       editor.append(el, createInsertionSlot(b.id));
     });
     enhanceTables();
+    refreshHangingDOM();
     lastSettings = settings();
     $("report").setAttribute("aria-pressed", String(mode === "report"));
     $("official").setAttribute("aria-pressed", String(mode === "official"));
@@ -813,6 +830,7 @@
     $("copy").disabled = true;
     try {
       pull();
+      refreshHangingDOM();
       const payload = D.convert(
         blocks,
         { ...opts(), ckeditor: copyTarget === "ckeditor" },
