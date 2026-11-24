@@ -1,0 +1,19 @@
+{
+  "id": "/asea/report-transfer/",
+  "name": "아세아 기안문/학사정보 게시판 형식 복사하기",
+  "short_name": "아세아 형식 복사",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f4f6f9",
+  "theme_color": "#285d9b",
+  "lang": "ko",
+  "icons": [
+    {
+      "src": "app-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

@@ -212,6 +212,8 @@
   }
 
   function render() {
+    if ($("fontFamily")) $("fontFamily").value = baseStyle.fontFamily;
+
     materializeText();
     if (!(baseStyle.lineHeight > 0)) baseStyle.lineHeight = 1;
     for (const b of blocks) {
@@ -2261,6 +2263,21 @@
     dialog.showModal?.();
     dialog.querySelector("#linkURL").focus();
   }
+  document.addEventListener('editor-font-change', e => {
+    if(window.EditorInput?.composing) return;
+    const font=String(e.detail || '').trim();
+    if(!font || font.length>100 || /[<>;{}]/.test(font)) return;
+    pull();save();baseStyle.fontFamily=font;
+    for(const b of blocks) {
+      if(b.kind==='image') continue;
+      if(b.kind==='table') {
+        b.tableOptions ||= {};b.tableOptions.fontFamily=font;
+        for(const st of Object.values(b.tableOptions.cellStyles || {})) st.fontFamily=font;
+        for(const marks of Object.values(b.tableOptions.cellMarks || {})) for(const m of marks) m.style={...m.style,fontFamily:font};
+      } else {b.style={...b.style,fontFamily:font};for(const m of b.marks || []) m.style={...m.style,fontFamily:font};}
+    }
+    render();status('문서 전체 서체: '+font+' · Ctrl+Z로 취소');
+  });
   // Expose snapshots as DOM events, keeping the editor state private.
   document.addEventListener('editor-style-preset',e=>{
     if(window.EditorInput?.composing)return;
