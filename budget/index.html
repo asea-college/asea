@@ -31,6 +31,14 @@
     const roleNames={staff:'교직원',dept_budget:'부서 예산담당',dept_head:'부서장',budget_admin:'예산관리 담당',executive:'임원'};
     const statusNames={draft:'작성 중',submitted:'검토 대기',review_department:'부서장 검토',review_budget:'예산관리 검토',returned:'보완 요청',rejected:'반려',approved:'승인 완료',complete:'집행 완료'};
     const state={user:null,profile:null,departments:[],allocations:[],requests:[],lines:[],reviews:[],actuals:[],profiles:[],view:'home',year:2027,filter:'',publicData:null,plPeriod:'2027-01',plDepartmentId:'all',plRevenues:[],plCosts:[],plRules:[],plFactors:[],plRuns:[],plAllocations:[]};
+    let ACCOUNT_CODES={};
+    async function loadAccountCodes(){
+      const {data}=await sb.from('account_code_categories').select('*').order('sort_order');
+      ACCOUNT_CODES={};
+      (data||[]).forEach(r=>{ACCOUNT_CODES[r.code]={id:r.id,name:r.name,type:r.type,sort_order:r.sort_order,subs:r.subs||[]};});
+    }
+    function makeAccountCode(main,subIdx){const c=ACCOUNT_CODES[main];if(!c||!c.subs[subIdx-1])return'';return`${main}-${subIdx}. ${c.name}-${c.subs[subIdx-1]}`;}
+    function typeLabel(t){return t==='revenue'?'세입':t==='common'?'공통':t==='expense'?'지출':t;}
     function toast(msg){const t=$('#toast');t.textContent=msg;t.classList.remove('hidden');clearTimeout(toast.timer);toast.timer=setTimeout(()=>t.classList.add('hidden'),3600)}
     window.closeDialog=()=>$('#dialog').close();
     function showDialog(title,body,foot){$('#dialogTitle').textContent=title;$('#dialogBody').innerHTML=body;$('#dialogFoot').innerHTML=foot;$('#dialog').showModal()}
@@ -55,21 +63,21 @@
     window.claimAdmin=async()=>{const code=$('#bootstrapCode')?.value?.trim();if(!code)return toast('활성화 코드를 입력해 주세요.');const {error}=await sb.rpc('budget_claim_initial_admin',{p_code:code});if(error)return toast(error.message);toast('최초 예산관리 담당자로 등록했습니다.');await initialize()};
     window.signOut=async()=>{await sb.auth.signOut();state.user=null;state.profile=null;authScreen()};
     async function initialize(){const {data:{user},error}=await sb.auth.getUser();if(error||!user){authScreen();return}state.user=user;const {data:profile,error:pe}=await sb.from('budget_profiles').select('user_id,email,display_name,department_id,role,is_active,department:budget_departments(id,code,name)').eq('user_id',user.id).maybeSingle();if(pe){authScreen('login','계정 정보를 불러오지 못했습니다. 잠시 후 다시 로그인해 주세요.');return}if(!profile){const {error:created}=await sb.from('budget_profiles').insert({user_id:user.id,email:user.email||'',display_name:user.user_metadata?.full_name||user.email?.split('@')[0]||'Staff'});if(!created){const {data:again}=await sb.from('budget_profiles').select('user_id,email,display_name,department_id,role,is_active,department:budget_departments(id,code,name)').eq('user_id',user.id).maybeSingle();profile=again}}state.profile=profile;if(!profile||!profile.is_active||!profile.department_id&&profile.role!=='budget_admin'){pendingScreen();return}if(profile.role==='budget_admin'||profile.role==='executive'||profile.department_id){await loadData();render() }else pendingScreen()}
-    async function loadData(){const y=state.year;const tasks=[sb.from('budget_departments').select('id,code,name,sort_order,active').order('sort_order'),sb.from('budget_allocations').select('*,department:budget_departments(name,code)').eq('fiscal_year',y).order('created_at',{ascending:false}),sb.from('budget_requests').select('*,department:budget_departments(name),allocation:budget_allocations(account_code,account_name)').eq('fiscal_year',y).order('created_at',{ascending:false}),sb.from('budget_actuals').select('request_id,amount,spent_on,is_final'),sb.from('budget_reviews').select('*').order('created_at',{ascending:false})];if(isAdmin())tasks.push(sb.from('budget_profiles').select('user_id,email,display_name,department_id,role,is_active,department:budget_departments(name)').order('email'));
+    async function loadData(){await loadAccountCodes();const y=state.year;const tasks=[sb.from('budget_departments').select('id,code,name,sort_order,active').order('sort_order'),sb.from('budget_allocations').select('*,department:budget_departments(name,code)').eq('fiscal_year',y).order('created_at',{ascending:false}),sb.from('budget_requests').select('*,department:budget_departments(name),allocation:budget_allocations(account_code,account_name)').eq('fiscal_year',y).order('created_at',{ascending:false}),sb.from('budget_actuals').select('request_id,amount,spent_on,is_final'),sb.from('budget_reviews').select('*').order('created_at',{ascending:false})];if(isAdmin())tasks.push(sb.from('budget_profiles').select('user_id,email,display_name,department_id,role,is_active,department:budget_departments(name)').order('email'));
       const rs=await Promise.all(tasks);for(const r of rs){if(r.error){console.error(r.error);toast('데이터 조회 오류: '+r.error.message);return}}
       [state.departments,state.allocations,state.requests,state.actuals,state.reviews]=rs.slice(0,5).map(x=>x.data||[]);state.profiles=isAdmin()?(rs[5]?.data||[]):[];state.lines=[];
     }
     window.refresh=async()=>{await loadData();render()};
     function navButton(view,label,icon){return `<button class="${state.view===view?'active':''}" onclick="setView('${view}')"><span>${icon} ${label}</span></button>`}
-    window.setView=async v=>{state.view=v;render();if(v==='people'&&isAdmin()){const {data,error}=await sb.from('budget_profiles').select('user_id,email,display_name,department_id,role,is_active,department:budget_departments(name)').order('email');if(!error){state.profiles=data||[];render()}}if(v==='profit'&&isAdmin()){await loadProfitData();render()}};
-    function shell(title,content){const prof=state.profile||{};$('#app').innerHTML=`<div class="app-shell"><aside class="sidebar"><div class="side-brand"><div class="logo">ASEA COLLEGE</div><b>예산관리</b><span>예산 편성 · 결재 · 집행 기록</span></div><nav class="nav"><div class="nav-caption">업무 메뉴</div>${navButton('home','현황판','▦')}${navButton('budgets','부서 예산','₩')}${navButton('requests','지출 신청·기안','▤')}${navButton('review','검토·승인','✓')}${isAdmin()?`${navButton('profit','부서 손익 분석','▤')}<div class="nav-caption">관리</div>${navButton('people','사용자·부서','⚙')}`:''}</nav><div class="side-bottom">회계연도 ${state.year}<br>저장된 변경은 권한에 따라 기록됩니다.</div></aside><section class="main"><header class="topbar"><div class="topbar-title">${title}</div><div class="user-chip"><div class="avatar">${esc((prof.display_name||'직').slice(0,1))}</div><div class="user-detail"><b>${esc(prof.display_name||prof.email)}</b><br>${esc(roleNames[prof.role]||'권한 대기')} · ${esc(prof.department?.name||'총괄')}</div><button class="btn secondary small" onclick="signOut()">로그아웃</button></div></header><main class="content">${content}</main></section></div>`}
+    window.setView=async v=>{state.view=v;render();if(v==='people'&&isAdmin()){const {data,error}=await sb.from('budget_profiles').select('user_id,email,display_name,department_id,role,is_active,department:budget_departments(name)').order('email');if(!error){state.profiles=data||[];render()}}if(v==='profit'&&isAdmin()){await loadProfitData();render()}if(v==='codeMgmt'&&isAdmin()){render()}};
+    function shell(title,content){const prof=state.profile||{};$('#app').innerHTML=`<div class="app-shell"><aside class="sidebar"><div class="side-brand"><div class="logo">ASEA COLLEGE</div><b>예산관리</b><span>예산 편성 · 결재 · 집행 기록</span></div><nav class="nav"><div class="nav-caption">업무 메뉴</div>${navButton('home','현황판','▦')}${navButton('budgets','부서 예산','₩')}${navButton('requests','지출 신청·기안','▤')}${navButton('review','검토·승인','✓')}${isAdmin()?`${navButton('profit','부서 손익 분석','▤')}<div class="nav-caption">관리</div>${navButton('people','사용자·부서','⚙')}${navButton('codeMgmt','계정코드 관리','#')}`:''}</nav><div class="side-bottom">회계연도 ${state.year}<br>저장된 변경은 권한에 따라 기록됩니다.</div></aside><section class="main"><header class="topbar"><div class="topbar-title">${title}</div><div class="user-chip"><div class="avatar">${esc((prof.display_name||'직').slice(0,1))}</div><div class="user-detail"><b>${esc(prof.display_name||prof.email)}</b><br>${esc(roleNames[prof.role]||'권한 대기')} · ${esc(prof.department?.name||'총괄')}</div><button class="btn secondary small" onclick="signOut()">로그아웃</button></div></header><main class="content">${content}</main></section></div>`}
     function yearPicker(){return `<select onchange="changeYear(this.value)"><option value="2027" ${state.year===2027?'selected':''}>2027년도</option><option value="2026" ${state.year===2026?'selected':''}>2026년도</option></select>`}
     window.changeYear=async y=>{state.year=Number(y);await loadData();render()};
     function actualFor(reqId){return state.actuals.filter(a=>a.request_id===reqId).reduce((s,a)=>s+Number(a.amount),0)}
     function allocationFor(id){return state.allocations.find(a=>a.id===id)}
     function homeView(){const list=state.allocations,reqs=state.requests;const total=list.filter(a=>a.status==='approved').reduce((s,a)=>s+Number(a.approved_amount??a.allocated_amount),0);const actual=state.actuals.reduce((s,a)=>s+Number(a.amount),0);const pending=reqs.filter(r=>['review_department','review_budget'].includes(r.status)).length;const remain=Math.max(total-actual,0);const recent=reqs.slice(0,6);
       return `<div class="page-head"><div><h1>예산 현황</h1><p>${state.year}년도 부서별 편성·신청·집행 실적을 확인합니다.</p></div><div class="actions">${yearPicker()}${isAdmin()?button('엑셀 붙여넣기','newAllocationImport()','secondary'):''}${canBudget()?button('예산 항목 등록','newAllocation()'):''}${button('지출 신청 작성','newRequest()','success')}</div></div><div class="cards"><div class="stat"><label>승인 편성액</label><strong>${won(total)}</strong><small>승인된 부서 예산 합계</small></div><div class="stat"><label>실제 집행액</label><strong>${won(actual)}</strong><small>완료·부분 집행 기록 합계</small></div><div class="stat"><label>남은 예산</label><strong>${won(remain)}</strong><small>승인 편성액 − 실제 집행액</small></div><div class="stat"><label>검토 대기</label><strong>${pending}건</strong><small>부서장 또는 예산관리 검토 필요</small></div></div><div class="two-col"><section class="panel"><div class="panel-head"><h2>최근 지출 신청</h2>${button('전체 보기',"setView('requests')",'secondary small')}</div>${recent.length?`<div class="table-wrap"><table class="table"><thead><tr><th>신청 건</th><th>부서</th><th>예산 항목</th><th>신청액</th><th>상태</th></tr></thead><tbody>${recent.map(r=>`<tr class="clickable" onclick="openRequest('${r.id}')"><td><b>${esc(r.title)}</b><br><small>${esc(r.request_no)}</small></td><td>${esc(r.department?.name)}</td><td>${esc(r.allocation?.account_name||'—')}</td><td class="money">${won(r.requested_amount)}</td><td>${statusBadge(r.status)}</td></tr>`).join('')}</tbody></table></div>`:'<div class="empty"><b>등록된 신청이 없습니다</b>지출 신청을 만들면 이곳에서 진행 상태를 확인할 수 있습니다.</div>'}</section><section class="panel"><div class="panel-head"><h2>부서별 편성·집행</h2>${yearPicker()}</div><div class="panel-body">${list.length?list.slice(0,8).map(a=>{const spent=reqs.filter(r=>r.allocation_id===a.id).reduce((s,r)=>s+actualFor(r.id),0),approved=Number(a.approved_amount??a.allocated_amount);return `<div style="margin-bottom:14px"><div style="display:flex;justify-content:space-between;gap:8px;font-size:12px"><b>${esc(a.department?.name)} · ${esc(a.account_name)}</b><span>${won(spent)} / ${won(approved)}</span></div><div class="bar"><i style="width:${Math.min(100,approved?spent/approved*100:0)}%"></i></div></div>`}).join(''):'<div class="empty">승인된 예산 항목이 없습니다.</div>'}</div></section></div>`}
-    function budgetView(){const q=state.filter.toLowerCase();const rows=state.allocations.filter(a=>`${a.account_name} ${a.account_code} ${a.department?.name}`.toLowerCase().includes(q));return `<div class="page-head"><div><h1>부서 예산</h1><p>부서별로 예산 항목과 산출 근거를 등록하고 총괄 검토를 받습니다.</p></div><div class="actions">${yearPicker()}${isAdmin()?button('엑셀 붙여넣기','newAllocationImport()','secondary'):''}${canBudget()?button('예산 항목 추가','newAllocation()'):''}</div></div><section class="panel"><div class="panel-head"><h2>${state.year}년도 예산 항목</h2><div class="toolbar"><input placeholder="항목·코드·부서 검색" value="${esc(state.filter)}" oninput="filterList(this.value)"><span class="pill">${rows.length}개</span></div></div><div class="table-wrap">${rows.length?`<table class="table"><thead><tr><th>부서</th><th>예산 코드</th><th>예산 항목</th><th>산출 근거</th><th>요청 편성액</th><th>확정액</th><th>상태</th><th></th></tr></thead><tbody>${rows.map(a=>`<tr><td>${esc(a.department?.name)}</td><td>${esc(a.account_code)}</td><td><b>${esc(a.account_name)}</b><br><small>${esc(a.category)}</small></td><td>${esc(a.basis||'—')}</td><td class="money">${won(a.allocated_amount)}</td><td class="money">${a.approved_amount==null?'—':won(a.approved_amount)}</td><td>${statusBadge(a.status)}</td><td>${a.status==='draft'||a.status==='rejected'?button('검토 제출',`submitAllocation('${a.id}')`,'small'):''}</td></tr>`).join('')}</tbody></table>`:'<div class="empty"><b>예산 항목이 아직 없습니다</b>부서 예산담당자가 항목과 산출 근거를 입력하면 이 목록에 표시됩니다.</div>'}</div></section><div class="alert">엑셀 편성 자료의 계정 코드·산출 근거를 확인해 등록하세요. 검토 완료 전 항목은 지출 신청에서 선택할 수 없습니다.</div>`}
+    function budgetView(){const q=state.filter.toLowerCase();const rows=state.allocations.filter(a=>`${a.account_name} ${a.account_code} ${a.department?.name}`.toLowerCase().includes(q));return `<div class="page-head"><div><h1>부서 예산</h1><p>부서별로 예산 항목과 산출 근거를 등록하고 총괄 검토를 받습니다.</p></div><div class="actions">${yearPicker()}${isAdmin()?button('엑셀 붙여넣기','newAllocationImport()','secondary'):''}${canBudget()?button('예산 항목 추가','newAllocation()'):''}</div></div><section class="panel"><div class="panel-head"><h2>${state.year}년도 예산 항목</h2><div class="toolbar"><input placeholder="항목·코드·부서 검색" value="${esc(state.filter)}" oninput="filterList(this.value)"><span class="pill">${rows.length}개</span></div></div><div class="table-wrap">${rows.length?`<table class="table"><thead><tr><th>부서</th><th>예산 코드</th><th>예산 항목</th><th>산출 근거</th><th>요청 편성액</th><th>확정액</th><th>상태</th><th></th></tr></thead><tbody>${rows.map(a=>`<tr><td>${esc(a.department?.name)}</td><td>${esc(a.account_code)}</td><td><b>${esc(a.account_name)}</b><br><small>${esc(a.category)}</small></td><td>${esc(a.basis||'—')}</td><td class="money">${won(a.allocated_amount)}</td><td class="money">${a.approved_amount==null?'—':won(a.approved_amount)}</td><td>${statusBadge(a.status)}</td><td style="white-space:nowrap">${a.status==='draft'||a.status==='rejected'?button('검토 제출',`submitAllocation('${a.id}')`,'small'):''} ${isAdmin()?button('코드 수정',`editAllocationCode('${a.id}')`,'small secondary'):''}</td></tr>`).join('')}</tbody></table>`:'<div class="empty"><b>예산 항목이 아직 없습니다</b>부서 예산담당자가 항목과 산출 근거를 입력하면 이 목록에 표시됩니다.</div>'}</div></section><div class="alert">엑셀 편성 자료의 계정 코드·산출 근거를 확인해 등록하세요. 검토 완료 전 항목은 지출 신청에서 선택할 수 없습니다.</div>`}
     function requestsView(){const q=state.filter.toLowerCase();const rows=state.requests.filter(r=>`${r.title} ${r.request_no} ${r.department?.name} ${r.groupware_document_no}`.toLowerCase().includes(q));return `<div class="page-head"><div><h1>지출 신청·기안</h1><p>예산 항목에 연결된 신청을 만들고, Cafe24 그룹웨어에 붙일 기안 HTML을 생성합니다.</p></div><div class="actions">${yearPicker()}${button('새 지출 신청','newRequest()','success')}</div></div><section class="panel"><div class="panel-head"><h2>신청 목록</h2><div class="toolbar"><input placeholder="제목·신청번호·결재문서 번호 검색" value="${esc(state.filter)}" oninput="filterList(this.value)"></div></div><div class="table-wrap">${rows.length?`<table class="table"><thead><tr><th>신청번호·제목</th><th>부서</th><th>예산 항목</th><th>신청/승인액</th><th>그룹웨어 문서번호</th><th>상태</th></tr></thead><tbody>${rows.map(r=>`<tr class="clickable" onclick="openRequest('${r.id}')"><td><b>${esc(r.title)}</b><br><small>${esc(r.request_no)} · ${fmtDate(r.created_at)}</small></td><td>${esc(r.department?.name)}</td><td>${esc(r.allocation?.account_name||'—')}</td><td class="money">${won(r.requested_amount)}${r.approved_amount!=null?`<br><small>승인 ${won(r.approved_amount)}</small>`:''}</td><td>${esc(r.groupware_document_no||'미연결')}</td><td>${statusBadge(r.status)}</td></tr>`).join('')}</tbody></table>`:'<div class="empty"><b>지출 신청 내역이 없습니다</b>새 신청을 만들면 결재·집행 단계가 이어집니다.</div>'}</div></section>`}
     function reviewView(){const rows=state.requests.filter(r=>['review_department','review_budget'].includes(r.status));const allocs=state.allocations.filter(a=>a.status==='submitted');return `<div class="page-head"><div><h1>검토·승인</h1><p>부서장 검토 후 예산관리 담당 또는 임원이 최종 승인합니다.</p></div></div><div class="tabs"><button id="reqReviewTab" class="active" onclick="reviewTab('requests')">지출 신청 (${rows.length})</button><button id="allocReviewTab" onclick="reviewTab('allocations')">예산 편성 (${allocs.length})</button></div><div id="reviewPane">${reviewCards(rows)}</div>`}
     function reviewCards(rows){return rows.length?`<div class="list">${rows.map(r=>`<article class="item-card"><div class="item-top"><div><h3>${esc(r.title)}</h3><div class="item-meta"><span>${esc(r.request_no)}</span><span>${esc(r.department?.name)}</span><span>${esc(r.allocation?.account_name||'')}</span><span>${fmtDate(r.submitted_at)}</span></div></div>${statusBadge(r.status)}</div><div class="item-foot"><b class="money">${won(r.requested_amount)}</b><div class="actions">${button('상세 보기',`openRequest('${r.id}')`,'secondary small')}${button('검토 의견 입력',`reviewRequest('${r.id}','${r.status}')`,'small')}</div></div></article>`).join('')}</div>`:'<div class="panel"><div class="empty"><b>검토 대기 건이 없습니다</b>새로 제출된 지출 신청이 이곳에 표시됩니다.</div></div>'}
@@ -87,7 +95,155 @@
     window.newPlRule=()=>{const depts=state.departments.filter(d=>d.active&&d.code!=='0');showDialog('월별 간접비 배부 기준 설정',`<form id="plRuleForm"><div class="field"><label>적용 월</label><input name="period" type="month" value="${esc(state.plPeriod)}" required></div><div class="field"><label>배부 기준명</label><input name="rule_name" required placeholder="예: 시설 공용면적 기준"></div><div class="field"><label>기준 종류</label><select name="basis_name"><option>재직 인원</option><option>사용 면적</option><option>사용 시간</option><option>학생 수</option><option>수입 비율</option><option>수기 배부 지수</option></select></div><div class="field"><label>산출 근거·비고</label><textarea name="memo" placeholder="자료 출처, 기준 산정일 등"></textarea></div><p class="muted">각 부서별 배부 값(인원·면적·시간 등)을 입력합니다. 비율은 저장된 값 합계에서 자동 계산됩니다.</p>${depts.map(d=>`<div class="form-grid"><div class="field"><label>${esc(d.code)} · ${esc(d.name)} 배부 값</label><input name="factor_${d.id}" type="number" min="0" step="0.001" value="0"></div><div class="field"><label>근거 메모</label><input name="evidence_${d.id}" placeholder="예: 120㎡"></div></div>`).join('')}</form>`,`<button class="btn secondary" onclick="closeDialog()">취소</button><button class="btn" onclick="savePlRule()">배부 기준 저장</button>`)};
     window.savePlRule=async()=>{const f=$('#plRuleForm');if(!f.reportValidity())return;const fd=new FormData(f),period=fd.get('period');if(!state.departments.some(d=>d.active&&d.code!=='0'&&Number(fd.get('factor_'+d.id)||0)>0))return toast('한 개 이상의 부서에 0보다 큰 배부 값을 입력해야 합니다.');const rule={period,rule_name:String(fd.get('rule_name')).trim(),basis_name:fd.get('basis_name'),memo:fd.get('memo')||'',active:true,created_by:state.user.id};const {data,error}=await sb.from('budget_pl_allocation_rules').insert(rule).select('id').single();if(error)return toast('배부 기준 저장 실패: '+error.message);const factors=state.departments.filter(d=>d.active&&d.code!=='0').map(d=>({rule_id:data.id,department_id:d.id,factor_value:Number(fd.get('factor_'+d.id)||0),evidence:fd.get('evidence_'+d.id)||''}));const {error:fe}=await sb.from('budget_pl_allocation_factors').insert(factors);if(fe)return toast('기준은 등록되었으나 부서 배부값 저장에 실패했습니다: '+fe.message);state.plPeriod=period;closeDialog();await loadProfitData();render();toast('배부 기준과 부서별 산출값을 저장했습니다.')};
     window.runPlAllocation=async()=>{if(!confirm(`${state.plPeriod} 공통 간접비를 저장된 배부 기준으로 계산하고 결과 이력으로 남기시겠습니까?`))return;const note=prompt('이번 배부 실행 메모(선택)','')??'';const {data,error}=await sb.rpc('budget_pl_run_allocation',{p_period:state.plPeriod,p_note:note});if(error)return toast('배부 실행 실패: '+error.message);await loadProfitData();render();toast('공통 간접비 배부 결과를 저장했습니다.')};
-    function render(){if(!state.user)return authScreen();if(!state.profile||!state.profile.is_active){pendingScreen();return}const titles={home:'예산 현황판',budgets:'부서 예산 편성',requests:'지출 신청·기안',review:'검토·승인',people:'사용자·부서 설정',profit:'부서 손익 분석'};let html=state.view==='home'?homeView():state.view==='budgets'?budgetView():state.view==='requests'?requestsView():state.view==='review'?reviewView():state.view==='people'&&isAdmin()?peopleView():state.view==='profit'&&isAdmin()?profitView():homeView();shell(titles[state.view]||'예산관리',html)}
+    function render(){if(!state.user)return authScreen();if(!state.profile||!state.profile.is_active){pendingScreen();return}const titles={home:'예산 현황판',budgets:'부서 예산 편성',requests:'지출 신청·기안',review:'검토·승인',people:'사용자·부서 설정',profit:'부서 손익 분석',codeMgmt:'계정코드 관리'};let html=state.view==='home'?homeView():state.view==='budgets'?budgetView():state.view==='requests'?requestsView():state.view==='review'?reviewView():state.view==='people'&&isAdmin()?peopleView():state.view==='profit'&&isAdmin()?profitView():state.view==='codeMgmt'&&isAdmin()?codeMgmtView():homeView();shell(titles[state.view]||'예산관리',html)}
+    
+    // ===================== ACCOUNT CODE MANAGEMENT =====================
+    function codeMgmtView(){
+      const cats=Object.entries(ACCOUNT_CODES).sort((a,b)=>a[1].sort_order-b[1].sort_order);
+      const expList=cats.filter(([k,v])=>v.type==='expense');
+      const revList=cats.filter(([k,v])=>v.type==='revenue');
+      const comList=cats.filter(([k,v])=>v.type==='common');
+      function codeTable(list){
+        if(!list.length)return'<p style="color:#888;font-size:13px">항목 없음</p>';
+        return`<table class="table"><thead><tr><th style="width:80px">코드</th><th>카테고리명</th><th>세부 항목</th><th style="width:90px"></th></tr></thead><tbody>${list.map(([code,c])=>`<tr><td><code style="background:#f0f4f8;padding:2px 6px;border-radius:4px">${esc(code)}</code></td><td><b>${esc(c.name)}</b></td><td><span style="color:#536779;font-size:12px">${(c.subs||[]).map(s=>esc(s)).join(', ')}</span></td><td style="white-space:nowrap">${button('수정',`editCodeCat('${code}')`,`small secondary`)} ${button('삭제',`deleteCodeCat('${code}')`,`small secondary`)}</td></tr>`).join('')}</tbody></table>`;
+      }
+      return`<div class="page-head"><div><h1>계정코드 관리</h1><p>예산 편성에 사용하는 계정 코드 체계를 관리합니다. 세입/지출/공통 구분으로 추가·수정할 수 있습니다.</p></div><div class="actions">${button('+ 카테고리 추가','openAddCodeCat()')}</div></div>
+      <section class="panel" style="margin-bottom:16px"><div class="panel-head"><h2>지출 예산 코드</h2><span class="pill">${expList.length}개</span></div><div class="table-wrap">${codeTable(expList)}</div></section>
+      <section class="panel" style="margin-bottom:16px"><div class="panel-head"><h2>세입 예산 코드</h2><span class="pill">${revList.length}개</span></div><div class="table-wrap">${codeTable(revList)}</div></section>
+      <section class="panel"><div class="panel-head"><h2>공통 법인 코드</h2><span class="pill">${comList.length}개</span></div><div class="table-wrap">${codeTable(comList)}</div></section>`;
+    }
+
+    window.openAddCodeCat=()=>{
+      openCodeCatModal({code:'',name:'',type:'expense',sort_order:999,subs:[]},false);
+    };
+    window.editCodeCat=code=>{
+      const c=ACCOUNT_CODES[code];
+      if(!c)return;
+      openCodeCatModal({code,name:c.name,type:c.type,sort_order:c.sort_order,subs:[...c.subs]},true);
+    };
+    function openCodeCatModal(data,isEdit){
+      const overlay=document.createElement('div');
+      overlay.id='codeCatOverlay';
+      overlay.style='position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1000;display:flex;align-items:center;justify-content:center';
+      overlay.innerHTML=`<div style="background:#fff;border-radius:12px;padding:28px;width:540px;max-width:95vw;max-height:85vh;overflow-y:auto">
+        <h2 style="margin:0 0 20px">${isEdit?'계정코드 수정':'새 계정코드 추가'}</h2>
+        <label style="display:block;margin-bottom:12px">코드 (예: 13, R04, C03)<br>
+          <input id="cc_code" value="${esc(data.code)}" ${isEdit?'readonly style="background:#f5f5f5"':''} style="width:100%;margin-top:4px;padding:8px;border:1px solid #d0dae3;border-radius:6px;box-sizing:border-box">
+        </label>
+        <label style="display:block;margin-bottom:12px">카테고리명<br>
+          <input id="cc_name" value="${esc(data.name)}" style="width:100%;margin-top:4px;padding:8px;border:1px solid #d0dae3;border-radius:6px;box-sizing:border-box">
+        </label>
+        <label style="display:block;margin-bottom:12px">구분<br>
+          <select id="cc_type" style="width:100%;margin-top:4px;padding:8px;border:1px solid #d0dae3;border-radius:6px">
+            <option value="expense"${data.type==='expense'?' selected':''}>지출 예산</option>
+            <option value="revenue"${data.type==='revenue'?' selected':''}>세입 예산</option>
+            <option value="common"${data.type==='common'?' selected':''}>공통 법인</option>
+          </select>
+        </label>
+        <label style="display:block;margin-bottom:12px">정렬 순서 (숫자 작을수록 위)<br>
+          <input id="cc_sort" type="number" value="${data.sort_order}" style="width:100%;margin-top:4px;padding:8px;border:1px solid #d0dae3;border-radius:6px;box-sizing:border-box">
+        </label>
+        <label style="display:block;margin-bottom:4px">세부 항목 (한 줄에 하나씩)</label>
+        <textarea id="cc_subs" rows="6" style="width:100%;padding:8px;border:1px solid #d0dae3;border-radius:6px;box-sizing:border-box;font-size:13px;resize:vertical">${(data.subs||[]).join('\n')}</textarea>
+        <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:20px">
+          <button class="btn secondary" onclick="closeCCModal()">취소</button>
+          <button class="btn" onclick="saveCodeCat(${isEdit})">저장</button>
+        </div>
+      </div>`;
+      document.body.appendChild(overlay);
+    }
+    window.closeCCModal=()=>{const el=document.getElementById('codeCatOverlay');if(el)el.remove();};
+    window.saveCodeCat=async(isEdit)=>{
+      const code=($('#cc_code')||{}).value?.trim();
+      const name=($('#cc_name')||{}).value?.trim();
+      const type=($('#cc_type')||{}).value;
+      const sort_order=parseInt(($('#cc_sort')||{}).value)||0;
+      const subsRaw=($('#cc_subs')||{}).value||'';
+      const subs=subsRaw.split('\n').map(s=>s.trim()).filter(Boolean);
+      if(!code||!name){alert('코드와 카테고리명을 입력하세요.');return;}
+      const payload={code,name,type,sort_order,subs,updated_at:new Date().toISOString()};
+      let err;
+      if(isEdit){
+        const {error}=await sb.from('account_code_categories').update(payload).eq('code',code);
+        err=error;
+      }else{
+        const {error}=await sb.from('account_code_categories').insert(payload);
+        err=error;
+      }
+      if(err){alert('저장 실패: '+err.message);return;}
+      closeCCModal();
+      await loadAccountCodes();
+      render();
+    };
+    window.deleteCodeCat=async code=>{
+      if(!confirm(\`'\${code}' 카테고리를 삭제하면 이 코드를 사용하는 예산항목의 코드명이 비어 보일 수 있습니다.\n정말 삭제하시겠습니까?\`))return;
+      const {error}=await sb.from('account_code_categories').delete().eq('code',code);
+      if(error){alert('삭제 실패: '+error.message);return;}
+      await loadAccountCodes();
+      render();
+    };
+
+    // ===================== ALLOCATION CODE EDIT =====================
+    window.editAllocationCode=id=>{
+      const a=state.allocations.find(x=>x.id===id);
+      if(!a)return;
+      const cats=Object.entries(ACCOUNT_CODES).sort((a,b)=>a[1].sort_order-b[1].sort_order);
+      const overlay=document.createElement('div');
+      overlay.id='codeEditOverlay';
+      overlay.style='position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1000;display:flex;align-items:center;justify-content:center';
+      overlay.innerHTML=`<div style="background:#fff;border-radius:12px;padding:28px;width:480px;max-width:95vw">
+        <h2 style="margin:0 0 4px">예산코드 수정</h2>
+        <p style="margin:0 0 20px;color:#536779;font-size:13px">${esc(a.account_name)} · ${esc(a.department?.name||'')}</p>
+        <label style="display:block;margin-bottom:12px">대분류<br>
+          <select id="ce_main" onchange="updateSubList()" style="width:100%;margin-top:4px;padding:8px;border:1px solid #d0dae3;border-radius:6px">
+            ${cats.map(([k,v])=>`<option value="${k}">[${typeLabel(v.type)}] ${k}. ${esc(v.name)}</option>`).join('')}
+          </select>
+        </label>
+        <label style="display:block;margin-bottom:12px">세부 항목<br>
+          <select id="ce_sub" onchange="updateCodePreview()" style="width:100%;margin-top:4px;padding:8px;border:1px solid #d0dae3;border-radius:6px"></select>
+        </label>
+        <div style="background:#f0f4f8;border-radius:8px;padding:12px;margin-bottom:20px">
+          <div style="font-size:11px;color:#536779;margin-bottom:4px">새 코드 미리보기</div>
+          <div id="ce_preview" style="font-weight:700;color:#1a2535;font-size:14px"></div>
+        </div>
+        <div style="display:flex;justify-content:flex-end;gap:8px">
+          <button class="btn secondary" onclick="document.getElementById('codeEditOverlay').remove()">취소</button>
+          <button class="btn" onclick="saveAllocationCode('${a.id}')">저장</button>
+        </div>
+      </div>`;
+      document.body.appendChild(overlay);
+      updateSubList();
+    };
+    window.updateSubList=()=>{
+      const main=($('#ce_main')||{}).value;
+      const c=ACCOUNT_CODES[main];
+      const sel=$('#ce_sub');
+      if(!sel||!c)return;
+      sel.innerHTML=(c.subs||[]).map((s,i)=>`<option value="${i+1}">${s}</option>`).join('');
+      updateCodePreview();
+    };
+    window.updateCodePreview=()=>{
+      const main=($('#ce_main')||{}).value;
+      const subIdx=parseInt(($('#ce_sub')||{}).value||'1');
+      const preview=document.getElementById('ce_preview');
+      if(preview)preview.textContent=makeAccountCode(main,subIdx)||'—';
+    };
+    window.saveAllocationCode=async(id)=>{
+      const main=($('#ce_main')||{}).value;
+      const subIdx=parseInt(($('#ce_sub')||{}).value||'1');
+      const c=ACCOUNT_CODES[main];
+      if(!c)return;
+      const account_code=makeAccountCode(main,subIdx);
+      const account_name=`${main}. ${c.name}`;
+      const category=c.subs[subIdx-1]||'';
+      const {error}=await sb.from('budget_allocations').update({account_code,account_name,category}).eq('id',id);
+      if(error){alert('저장 실패: '+error.message);return;}
+      const overlay=document.getElementById('codeEditOverlay');
+      if(overlay)overlay.remove();
+      await loadData();
+    };
+    // ===================================================================
+
     window.render=render;
 
 
