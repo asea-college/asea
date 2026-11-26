@@ -1,0 +1,25 @@
+{
+  "name": "ASEA College 예산관리",
+  "short_name": "ASEA 예산",
+  "description": "부서 예산 편성·기안·집행 관리 시스템",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#1a3a5c",
+  "theme_color": "#1a3a5c",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
